@@ -8,7 +8,7 @@ from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy import create_engine, String, Integer, DateTime, ForeignKey, Boolean, select, text, inspect
+from sqlalchemy import create_engine, String, Integer, DateTime, ForeignKey, Boolean, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker, Session
 
 class Settings(BaseSettings):
