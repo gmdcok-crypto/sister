@@ -4,13 +4,13 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import create_engine, String, Integer, DateTime, ForeignKey, Boolean, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker, Session
 
 class Settings(BaseSettings):
-    database_url: str
+    database_url: str = Field(validation_alias=AliasChoices('DATABASE_URL', 'MYSQL_URL', 'database_url'))
     cors_origins: str = 'http://localhost:5173,http://127.0.0.1:5173'
     admin_api_key: str = ''
     orders_enabled: bool = False

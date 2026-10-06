@@ -28,7 +28,7 @@ npm run dev
 
 1. 저장소 연결. Root Directory는 비워 둠(저장소 루트). `railway.toml` + Dockerfile 빌드.
 2. 같은 프로젝트에 MySQL 생성.
-3. API 서비스 `DATABASE_URL=${{MySQL.MYSQL_URL}}` 지정. MySQL 서비스명이 다르면 참조 이름 변경. API에서 mysql://를 mysql+pymysql://로 변환.
+3. API 서비스에 `MYSQL_URL=${{MySQL.MYSQL_URL}}` 또는 `DATABASE_URL=${{MySQL.MYSQL_URL}}` 지정(둘 다 인식). MySQL 서비스명이 다르면 참조 이름 변경. API에서 mysql://를 mysql+pymysql://로 변환.
 4. `CORS_ORIGINS=https://실제사이트.netlify.app` 설정. 로컬도 필요하면 쉼표로 추가. `ADMIN_API_KEY`는 충분히 긴 임의 비밀값.
 5. 서비스 쉘에서 `python -m app.seed` 실행해 초기 스키마·상품 등록. 반복 실행은 기존 상품·가격을 덮어쓰지 않음.
 6. API 공개 도메인 생성. `/health`로 DB 연결 확인. DB 준비 전 healthcheck 실패는 정상.
