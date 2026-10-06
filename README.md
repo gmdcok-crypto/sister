@@ -30,7 +30,7 @@ npm run dev
 2. 같은 프로젝트에 MySQL 생성.
 3. API 서비스에 `MYSQL_URL=${{MySQL.MYSQL_URL}}` 또는 `DATABASE_URL=${{MySQL.MYSQL_URL}}` 지정(둘 다 인식). MySQL 서비스명이 다르면 참조 이름 변경. API에서 mysql://를 mysql+pymysql://로 변환.
 4. `CORS_ORIGINS=https://실제사이트.netlify.app` 설정. 로컬도 필요하면 쉼표로 추가. `ADMIN_API_KEY`는 충분히 긴 임의 비밀값.
-5. 서비스 쉘에서 `python -m app.seed` 실행해 초기 스키마·상품 등록. 반복 실행은 기존 상품·가격을 덮어쓰지 않음.
+5. 컨테이너 기동 시 `app.seed`와 `app.update_images`가 자동 실행됩니다(없는 상품만 추가, 이미지 URL만 갱신). Shell에서 따로 실행할 필요 없습니다.
 6. API 공개 도메인 생성. `/health`로 DB 연결 확인. DB 준비 전 healthcheck 실패는 정상.
 7. `ORDERS_ENABLED=false` 유지. 가격·상품 옵션·배송비·개인정보 처리·결제·재고·중복 접수 방지·요청 제한 운영 정책을 확정한 후 실제 접수 활성화.
 
