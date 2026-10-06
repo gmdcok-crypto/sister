@@ -1,11 +1,29 @@
 {
   "categories": [
-    "닭가슴살·닭안심살",
-    "특수부위",
-    "윙·봉·닭다리살",
-    "닭한마리·오리고기",
-    "소고기",
-    "돼지고기"
+    {
+      "name": "닭가슴살·닭안심살",
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/breast.png"
+    },
+    {
+      "name": "특수부위",
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/special.png"
+    },
+    {
+      "name": "윙·봉·닭다리살",
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/wing.png"
+    },
+    {
+      "name": "닭한마리·오리고기",
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/whole.png"
+    },
+    {
+      "name": "소고기",
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/beef.png"
+    },
+    {
+      "name": "돼지고기",
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/pork.png"
+    }
   ],
   "products": [
     {
@@ -120,5 +138,6 @@
       "price": 6000,
       "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/chicken-breast-premium.png"
     }
-  ]
+  ],
+  "all_category_image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/all.png"
 }

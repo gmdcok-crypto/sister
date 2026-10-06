@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from app.main import app, Base, engine, SessionLocal, Category, Product, settings
 Base.metadata.create_all(engine)
 with SessionLocal() as s:
-    s.add(Category(id=2,name='특수부위'));s.flush()
+    s.add(Category(id=2,name='특수부위',image=''));s.flush()
     s.add(Product(id=1,category_id=2,name='닭발',option='500g',price=8500,image='/test.png'));s.commit()
 client=TestClient(app)
 def payload(items): return dict(customer_name='홍길동',phone='01012345678',address='서울시 테스트 주소 123',items=items)

@@ -33,9 +33,13 @@ PRODUCT_NAMES = {
     'chicken-breast-premium.png',
 }
 BRAND_NAMES = {'unnine-logo-transparent.png'}
+CATEGORY_DIR = ASSETS / 'categories'
 
 
-def r2_key(name: str) -> str:
+def r2_key(path: Path) -> str:
+    name = path.name
+    if path.parent.name == 'categories':
+        return f'categories/{name}'
     if name in PRODUCT_NAMES:
         return f'products/{name}'
     if name in BRAND_NAMES:
@@ -49,21 +53,33 @@ def main() -> None:
         p for p in ASSETS.iterdir()
         if p.is_file() and p.suffix.lower() in {'.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'}
     )
+    if CATEGORY_DIR.is_dir():
+        files.extend(sorted(
+            p for p in CATEGORY_DIR.iterdir()
+            if p.is_file() and p.suffix.lower() in {'.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'}
+        ))
     if not files:
         raise FileNotFoundError(f'이미지 없음: {ASSETS}')
 
     for local in files:
-        key = r2_key(local.name)
+        key = r2_key(local)
         url = upload_file(local, key)
         uploaded[local.name] = url
         print(f'uploaded {key} -> {url}')
 
     catalog = json.loads(CATALOG.read_text(encoding='utf-8'))
     for row in catalog['products']:
-        row['image'] = uploaded[Path(row['image']).name] if not str(row['image']).startswith('http') else uploaded.get(Path(row['image']).name, row['image'])
         name = Path(row['image']).name
         if name in uploaded:
             row['image'] = uploaded[name]
+    if isinstance(catalog.get('categories'), list):
+        for item in catalog['categories']:
+            if isinstance(item, dict):
+                name = Path(item.get('image', '')).name
+                if name in uploaded:
+                    item['image'] = uploaded[name]
+    if 'all.png' in uploaded:
+        catalog['all_category_image'] = uploaded['all.png']
     CATALOG.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
     front_rows = json.loads(FRONTEND_CATALOG.read_text(encoding='utf-8'))

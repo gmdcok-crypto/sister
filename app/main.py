@@ -1,12 +1,14 @@
 import secrets
+import json
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy import create_engine, String, Integer, DateTime, ForeignKey, Boolean, select, text
+from sqlalchemy import create_engine, String, Integer, DateTime, ForeignKey, Boolean, select, text, inspect
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker, Session
 
 class Settings(BaseSettings):
@@ -25,6 +27,7 @@ class Category(Base):
     __tablename__ = 'categories'
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
+    image: Mapped[str] = mapped_column(String(500), default='')
     position: Mapped[int] = mapped_column(Integer, default=0)
 class Product(Base):
     __tablename__ = 'products'
@@ -77,11 +80,16 @@ app.add_middleware(CORSMiddleware, allow_origins=[x.strip() for x in settings.co
 def health(session: Session = Depends(db)):
     session.execute(text('SELECT 1'))
     return {'status':'ok'}
-@app.get('/api/config')
-def config(): return {'orders_enabled': settings.orders_enabled}
 @app.get('/api/categories')
 def categories(session: Session = Depends(db)):
-    return [{'id': c.id, 'name': c.name} for c in session.scalars(select(Category).order_by(Category.position))]
+    return [{'id': c.id, 'name': c.name, 'image': c.image or ''} for c in session.scalars(select(Category).order_by(Category.position))]
+@app.get('/api/config')
+def config():
+    catalog = json.loads((Path(__file__).resolve().parents[1] / 'catalog.json').read_text(encoding='utf-8'))
+    return {
+        'orders_enabled': settings.orders_enabled,
+        'all_category_image': catalog.get('all_category_image', ''),
+    }
 @app.get('/api/products', response_model=List[ProductOut])
 def products(category_id: Optional[int] = None, q: str = '', session: Session = Depends(db)):
     stmt = select(Product).where(Product.active == True)
