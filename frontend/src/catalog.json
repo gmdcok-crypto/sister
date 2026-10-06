@@ -2,15 +2,15 @@
   {
     "id": 1,
     "category_id": 2,
-    "name": "무뼈??��",
-    "option": "500g ?�택 ?�션",
+    "name": "무뼈닭발",
+    "option": "500g 선택 옵션",
     "price": 8500,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-feet-premium.png"
   },
   {
     "id": 2,
     "category_id": 2,
-    "name": "?�수????��",
+    "name": "육수용 닭뼈",
     "option": "1kg",
     "price": 1490,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/bones-premium.png"
@@ -18,15 +18,15 @@
   {
     "id": 3,
     "category_id": 2,
-    "name": "??��??,
-    "option": "500g ?�택 ?�션",
+    "name": "닭근위",
+    "option": "500g 선택 옵션",
     "price": 4600,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/gizzard-premium.png"
   },
   {
     "id": 4,
     "category_id": 2,
-    "name": "무염지 ??��리순??,
+    "name": "무염지 닭다리순살",
     "option": "1kg",
     "price": 6500,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/thigh-premium.png"
@@ -34,15 +34,15 @@
   {
     "id": 5,
     "category_id": 2,
-    "name": "??��?�·닭간·닭?�집",
-    "option": "1kg ?�포??,
+    "name": "닭염통·닭간·닭알집",
+    "option": "1kg 소포장",
     "price": 4500,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/organs-premium.png"
   },
   {
     "id": 6,
     "category_id": 2,
-    "name": "??��??,
+    "name": "닭목살",
     "option": "1kg",
     "price": 6800,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/neck-premium.png"
@@ -50,7 +50,7 @@
   {
     "id": 7,
     "category_id": 2,
-    "name": "무뼈??�� ?�?�량",
+    "name": "무뼈닭발 대용량",
     "option": "2kg",
     "price": 22000,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-feet-premium.png"
@@ -58,31 +58,31 @@
   {
     "id": 8,
     "category_id": 2,
-    "name": "??���??�?�량",
-    "option": "10kg · 1kg × 10??,
+    "name": "닭껍질 대용량",
+    "option": "10kg · 1kg × 10팩",
     "price": 26000,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/skin-premium.png"
   },
   {
     "id": 9,
     "category_id": 2,
-    "name": "????���?,
-    "option": "1kg ?�션",
+    "name": "생 닭껍질",
+    "option": "1kg 옵션",
     "price": 2600,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/skin-premium.png"
   },
   {
     "id": 10,
     "category_id": 2,
-    "name": "무뼈??�� ?�소??,
-    "option": "10kg · 1kg ?�장",
+    "name": "무뼈닭발 업소용",
+    "option": "10kg · 1kg 포장",
     "price": 160000,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-feet-premium.png"
   },
   {
     "id": 11,
     "category_id": 2,
-    "name": "????�연골·오?�뼈",
+    "name": "닭가슴연골·오돌뼈",
     "option": "1kg",
     "price": 5500,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/cartilage-premium.png"
@@ -90,7 +90,7 @@
   {
     "id": 12,
     "category_id": 2,
-    "name": "???�창??,
+    "name": "닭 안창살",
     "option": "1kg",
     "price": 8900,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/inner-premium.png"
@@ -98,7 +98,7 @@
   {
     "id": 13,
     "category_id": 2,
-    "name": "?�질 뼈닭�?,
+    "name": "손질 뼈닭발",
     "option": "1kg",
     "price": 7000,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/feet-premium.png"
@@ -106,8 +106,8 @@
   {
     "id": 14,
     "category_id": 1,
-    "name": "?�선 ????�살",
-    "option": "?�포???�택 ?�션",
+    "name": "신선 닭가슴살",
+    "option": "소포장 선택 옵션",
     "price": 6000,
     "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/chicken-breast-premium.png"
   }
