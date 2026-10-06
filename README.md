@@ -67,7 +67,17 @@ API 테스트 5개 통과, Vite 프로덕션 빌드 통과. 브라우저에서 A
 
 공식 설정 참고: https://docs.railway.com/databases/mysql , https://fastapi.tiangolo.com/tutorial/cors/ , https://docs.netlify.com/build/environment-variables/get-started/
 
-## 상품 이미지 교체
+## 상품 이미지 (Cloudflare R2)
 
-13개 상품 전부 AI 연출 이미지로 교체. 9개 부위 이미지 신규 생성, 기존 무뼈닭발 이미지 재사용. 같은 부위의 대용량 상품은 같은 사진 사용. 캡처 원본은 로고 표시만 사용. 기존 DB는 백엔드에서 python -m app.update_images 명령으로 이미지 URL만 갱신하며 가격과 상품명은 유지.
+상품 이미지는 R2 버킷 `sisterfood`의 `products/` 키에 저장합니다. 로고·캡처는 Netlify `frontend/public/assets`에 둡니다.
+
+로컬 이미지를 R2에 올리고 `catalog.json` URL을 공개 URL로 바꾸려면 `.env`에 R2 값을 넣은 뒤:
+
+```powershell
+.venv/Scripts/python -m app.sync_r2_images
+# 이미 seed된 DB면 이미지 URL만 갱신
+.venv/Scripts/python -m app.update_images
+```
+
+R2 버킷은 공개 읽기(또는 커스텀 도메인)가 켜져 있어야 하고, `R2_PUBLIC_URL`은 그 공개 베이스 URL입니다.
 
