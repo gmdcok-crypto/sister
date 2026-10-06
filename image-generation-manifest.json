@@ -1,0 +1,60 @@
+{
+  "tool": "built-in imagegen",
+  "style": "Square raw product photography, ivory plate, warm white background, diffused studio light, no text or packaging",
+  "assets": [
+    {
+      "name": "bones",
+      "id": 2,
+      "subject": "raw chicken carcass backs and leg bones for soup, bone-in poultry frames, no breast fillets",
+      "path": "C:\\Users\\gmdco\\.codex\\generated_images\\01a0fefd-4026-70e2-8b88-3383279d3907\\exec-25bbd527-91c5-4e5b-bd9b-034940fdd6fd.png"
+    },
+    {
+      "name": "gizzard",
+      "id": 3,
+      "subject": "raw cleaned chicken gizzards, small compact dark pink-red muscular lobes with pale seams",
+      "path": "C:\\Users\\gmdco\\.codex\\generated_images\\01a0fefd-4026-70e2-8b88-3383279d3907\\exec-89e9d41b-f9f1-4db4-a560-f013b7889f84.png"
+    },
+    {
+      "name": "thigh",
+      "id": 4,
+      "subject": "raw boneless skinless chicken thigh meat, irregular pale pink whole thigh pieces",
+      "path": "C:\\Users\\gmdco\\.codex\\generated_images\\01a0fefd-4026-70e2-8b88-3383279d3907\\exec-934dddeb-51f4-41b5-a8fa-e6dfe4269d61.png"
+    },
+    {
+      "name": "organs",
+      "id": 5,
+      "subject": "raw chicken heart liver and immature egg organs assortment, dark burgundy liver lobes and small hearts, appropriate yellow immature yolks",
+      "path": "C:\\Users\\gmdco\\.codex\\generated_images\\01a0fefd-4026-70e2-8b88-3383279d3907\\exec-c5bb7756-7cd0-471b-a361-4e2684853983.png"
+    },
+    {
+      "name": "neck",
+      "id": 6,
+      "subject": "raw boneless chicken neck meat strips, small irregular pink narrow meat strips",
+      "path": "C:\\Users\\gmdco\\.codex\\generated_images\\01a0fefd-4026-70e2-8b88-3383279d3907\\exec-210aff5b-eb52-474f-94e4-b9b9ef68c120.png"
+    },
+    {
+      "name": "skin",
+      "id": 8,
+      "subject": "raw chicken skin, thin ivory pale pink folded sheets, no meat fillets",
+      "path": "C:\\Users\\gmdco\\.codex\\generated_images\\01a0fefd-4026-70e2-8b88-3383279d3907\\exec-33ad3fd9-ecfa-4fd3-98d4-6e7114ebd1f1.png"
+    },
+    {
+      "name": "cartilage",
+      "id": 11,
+      "subject": "raw chicken breast cartilage and small cartilage pieces, ivory firm cartilage with pale pink meat traces",
+      "path": "C:\\Users\\gmdco\\.codex\\generated_images\\01a0fefd-4026-70e2-8b88-3383279d3907\\exec-ba762ebc-48d3-45a5-a1c3-37cb3d439b0d.png"
+    },
+    {
+      "name": "inner",
+      "id": 12,
+      "subject": "raw chicken inner skirt meat (안창살), small irregular dark pink strips and pieces",
+      "path": "C:\\Users\\gmdco\\.codex\\generated_images\\01a0fefd-4026-70e2-8b88-3383279d3907\\exec-81f350dc-cc93-4a99-bc2b-8e18ca08d35c.png"
+    },
+    {
+      "name": "feet",
+      "id": 13,
+      "subject": "raw cleaned intact bone-in chicken feet, recognizable long toes, trimmed clean feet, no breast fillets",
+      "path": "C:\\Users\\gmdco\\.codex\\generated_images\\01a0fefd-4026-70e2-8b88-3383279d3907\\exec-dbc32a3c-eddf-461f-8c37-1961bdcd96cd.png"
+    }
+  ]
+}
