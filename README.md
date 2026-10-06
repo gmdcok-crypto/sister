@@ -69,9 +69,13 @@ API 테스트 5개 통과, Vite 프로덕션 빌드 통과. 브라우저에서 A
 
 ## 상품 이미지 (Cloudflare R2)
 
-상품 이미지는 R2 버킷 `sisterfood`의 `products/` 키에 저장합니다. 로고·캡처는 Netlify `frontend/public/assets`에 둡니다.
+이미지는 R2 버킷 `sisterfood`에 저장합니다.
 
-로컬 이미지를 R2에 올리고 `catalog.json` URL을 공개 URL로 바꾸려면 `.env`에 R2 값을 넣은 뒤:
+- 상품: `products/`
+- 로고: `brand/`
+- 기타(캡처 등): `assets/`
+
+로컬 `frontend/public/assets`를 전부 올리고 프론트/카탈로그 URL을 공개 URL로 바꾸려면:
 
 ```powershell
 .venv/Scripts/python -m app.sync_r2_images
