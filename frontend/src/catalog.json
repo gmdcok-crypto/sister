@@ -5,7 +5,7 @@
     "name": "무뼈닭발",
     "option": "500g 선택 옵션",
     "price": 8500,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-feet-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-feet-premium.webp"
   },
   {
     "id": 2,
@@ -13,7 +13,7 @@
     "name": "육수용 닭뼈",
     "option": "1kg",
     "price": 1490,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/bones-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/bones-premium.webp"
   },
   {
     "id": 3,
@@ -21,7 +21,7 @@
     "name": "닭근위",
     "option": "500g 선택 옵션",
     "price": 4600,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/gizzard-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/gizzard-premium.webp"
   },
   {
     "id": 4,
@@ -29,7 +29,7 @@
     "name": "무염지 닭다리순살",
     "option": "1kg",
     "price": 6500,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/thigh-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/thigh-premium.webp"
   },
   {
     "id": 5,
@@ -37,7 +37,7 @@
     "name": "닭염통·닭간·닭알집",
     "option": "1kg 소포장",
     "price": 4500,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/organs-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/organs-premium.webp"
   },
   {
     "id": 6,
@@ -45,7 +45,7 @@
     "name": "닭목살",
     "option": "1kg",
     "price": 6800,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/neck-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/neck-premium.webp"
   },
   {
     "id": 7,
@@ -53,7 +53,7 @@
     "name": "무뼈닭발 대용량",
     "option": "2kg",
     "price": 22000,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-feet-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-feet-premium.webp"
   },
   {
     "id": 8,
@@ -61,7 +61,7 @@
     "name": "닭껍질 대용량",
     "option": "10kg · 1kg × 10팩",
     "price": 26000,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/skin-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/skin-premium.webp"
   },
   {
     "id": 9,
@@ -69,7 +69,7 @@
     "name": "생 닭껍질",
     "option": "1kg 옵션",
     "price": 2600,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/skin-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/skin-premium.webp"
   },
   {
     "id": 10,
@@ -77,7 +77,7 @@
     "name": "무뼈닭발 업소용",
     "option": "10kg · 1kg 포장",
     "price": 160000,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-feet-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-feet-premium.webp"
   },
   {
     "id": 11,
@@ -85,7 +85,7 @@
     "name": "닭가슴연골·오돌뼈",
     "option": "1kg",
     "price": 5500,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/cartilage-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/cartilage-premium.webp"
   },
   {
     "id": 12,
@@ -93,7 +93,7 @@
     "name": "닭 안창살",
     "option": "1kg",
     "price": 8900,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/inner-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/inner-premium.webp"
   },
   {
     "id": 13,
@@ -101,7 +101,7 @@
     "name": "손질 뼈닭발",
     "option": "1kg",
     "price": 7000,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/feet-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/feet-premium.webp"
   },
   {
     "id": 14,
@@ -109,6 +109,6 @@
     "name": "신선 닭가슴살",
     "option": "소포장 선택 옵션",
     "price": 6000,
-    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/chicken-breast-premium.png"
+    "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/chicken-breast-premium.webp"
   }
 ]
