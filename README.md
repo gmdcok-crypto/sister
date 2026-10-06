@@ -1,10 +1,10 @@
 # 언니네닭 쇼핑몰 1차 구현
 
-프론트: Vite + JavaScript / Netlify. 백엔드: Python FastAPI + SQLAlchemy / Railway. DB: Railway MySQL.
+프론트: Vite + JavaScript / Netlify (`frontend/`). 백엔드: Python FastAPI + SQLAlchemy / Railway (저장소 루트). DB: Railway MySQL.
 
 ## 로컬 실행
 
-백엔드 폴더에서 Python 3.12 권장:
+저장소 루트에서 Python 3.12 권장:
 
 ```powershell
 python -m venv .venv
@@ -18,6 +18,7 @@ Copy-Item .env.example .env
 프론트 폴더:
 
 ```powershell
+cd frontend
 Copy-Item .env.example .env
 npm ci
 npm run dev
@@ -25,7 +26,7 @@ npm run dev
 
 ## Railway
 
-1. 저장소 연결 후 백엔드 서비스 Root Directory를 `backend`로 설정(이 폴더를 별도 저장소 루트로 사용하면 `backend`). Dockerfile 빌드.
+1. 저장소 연결. Root Directory는 비워 둠(저장소 루트). `railway.toml` + Dockerfile 빌드.
 2. 같은 프로젝트에 MySQL 생성.
 3. API 서비스 `DATABASE_URL=${{MySQL.MYSQL_URL}}` 지정. MySQL 서비스명이 다르면 참조 이름 변경. API에서 mysql://를 mysql+pymysql://로 변환.
 4. `CORS_ORIGINS=https://실제사이트.netlify.app` 설정. 로컬도 필요하면 쉼표로 추가. `ADMIN_API_KEY`는 충분히 긴 임의 비밀값.
@@ -35,7 +36,7 @@ npm run dev
 
 ## Netlify
 
-저장소에서 이 프로젝트를 연결. 이 폴더가 저장소 루트이면 제공된 netlify.toml 사용. 상위 kwangsung 폴더가 저장소 루트이면 Base directory를 `frontend`, Build command `npm ci && npm run build`, Publish directory `dist`로 지정.
+저장소에서 이 프로젝트를 연결. 제공된 `netlify.toml`이 Base directory를 `frontend`로 지정함.
 
 환경 변수 `VITE_API_URL=https://실제API.up.railway.app`. 변경 시 재빌드. DB 비밀번호와 ADMIN_API_KEY는 프론트에 넣지 않음.
 
