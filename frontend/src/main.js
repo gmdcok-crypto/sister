@@ -4,7 +4,7 @@ const won=n=>n.toLocaleString('ko-KR')+'원';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const AUTH_KEY='unnine-auth';
 const GUEST_KEY='unnine-guest';
-let products=[], categories=[], selected=0, search='', enabled=false, detailId=null, authView=null, authUser=null, social={kakao:false,naver:false};
+let products=[], categories=[], selected=0, search='', enabled=false, detailId=null, authView=null, mypageView=false, authUser=null, social={kakao:false,naver:false}, myOrders=[], lookupOrder=null;
 let cart=[]; try {cart=JSON.parse(localStorage.getItem('unnine-cart')||'[]').filter(x=>Number.isInteger(x.id)&&Number.isInteger(x.quantity)&&x.quantity>0&&x.quantity<=100)}catch{}
 
 function getToken(){try{return JSON.parse(localStorage.getItem(AUTH_KEY)||'null')?.token||''}catch{return ''}}
@@ -34,10 +34,11 @@ async function request(path,options={}){
 
 const LOGO='https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/unnine-logo-transparent.webp?v=1';
 
-document.querySelector('#app').innerHTML=`<header><div class="top"><a href="#/" class="logo" aria-label="언니네닭 홈"><img src="${LOGO}" alt="언니네닭"></a><form id="search"><input aria-label="상품 검색" placeholder="어떤 상품을 찾으세요?"><button>검색</button></form><button type="button" id="account-btn" class="account-btn">로그인</button><button id="cart-open">장바구니 <span id="count">0</span></button></div></header><main>
+document.querySelector('#app').innerHTML=`<header><div class="top"><a href="#/" class="logo" aria-label="언니네닭 홈"><img src="${LOGO}" alt="언니네닭"></a><form id="search"><input aria-label="상품 검색" placeholder="어떤 상품을 찾으세요?"><button>검색</button></form><button type="button" id="orders-btn" class="account-btn">주문내역</button><button type="button" id="account-btn" class="account-btn">로그인</button><button id="cart-open">장바구니 <span id="count">0</span></button></div></header><main>
 <section id="home-view"><section class="hero"><div><p class="accent">우리 집 식탁을 위한 장보기</p><h1>맛있는 선택,<br>언니네닭에서.</h1><p>닭고기부터 다양한 육류까지.<br>필요한 상품을 편리하게 만나보세요.</p><button id="browse">상품 둘러보기</button></div><div class="hero-media" aria-roledescription="carousel" aria-label="추천 상품 이미지"><div class="hero-slides"><img class="hero-slide is-active" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-products.webp?v=4" alt="닭고기 모음" decoding="async"><img class="hero-slide" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-beef-pork.webp?v=1" alt="소고기·돼지고기 모음" decoding="async"><img class="hero-slide" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-roast-chicken-duck.webp?v=1" alt="로스팅 치킨·오리 모음" decoding="async"></div><div class="hero-dots" role="tablist" aria-label="슬라이드"><button type="button" class="hero-dot is-active" aria-label="1번째 이미지" data-hero="0"></button><button type="button" class="hero-dot" aria-label="2번째 이미지" data-hero="1"></button><button type="button" class="hero-dot" aria-label="3번째 이미지" data-hero="2"></button></div></div></section><div class="category-nav-wrap"><nav id="nav" class="category-nav" aria-label="상품 카테고리"></nav><span class="category-nav-hint" aria-hidden="true">›</span></div><section id="catalog"><div class="title"><h2 id="title">전체상품</h2><span id="results" aria-live="polite"></span></div><p id="error" role="alert"></p><div id="grid" class="grid"></div></section></section>
 <section id="product-view" class="product-view" hidden></section>
 <section id="auth-view" class="auth-view" hidden></section>
+<section id="mypage-view" class="mypage-view" hidden></section>
 </main><footer>언니네닭 <p>상품·가격은 제공된 캡처를 바탕으로 등록한 초기 자료입니다. 상품 사진은 AI로 제작한 연출 이미지입니다.</p></footer><dialog id="cart"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><label>배송 주소<input name="address" required minlength="5" maxlength="500" autocomplete="street-address"></label><p>결제·배송비 연동 전입니다. 현재 기능은 결제 대기 상태의 주문 접수입니다.</p><button id="submit" type="submit">주문 접수</button><p id="order-message" role="status"></p></form></dialog>`;
 
 function persist(){localStorage.setItem('unnine-cart',JSON.stringify(cart));document.querySelector('#count').textContent=cart.reduce((n,x)=>n+x.quantity,0)}
@@ -45,6 +46,7 @@ function parseRoute(){
   const h=(location.hash||'#/').replace(/^#/, '');
   if(/^\/?login/.test(h)) return {view:'login',id:null};
   if(/^\/?signup/.test(h)) return {view:'signup',id:null};
+  if(/^\/?mypage/.test(h)||/^\/?orders/.test(h)) return {view:'mypage',id:null};
   const m=h.match(/^\/?product\/(\d+)/);
   return m?{view:'product',id:+m[1]}:{view:'home',id:null};
 }
@@ -52,6 +54,13 @@ function goHome(){location.hash='#/'}
 function goProduct(id){location.hash=`#/product/${id}`}
 function goLogin(){location.hash='#/login'}
 function goSignup(){location.hash='#/signup'}
+function goMypage(){location.hash='#/mypage'}
+function formatWhen(value){
+  if(!value) return '';
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString('ko-KR');
+}
 
 function updateAccountUI(){
   const btn=document.querySelector('#account-btn');
@@ -148,31 +157,98 @@ function renderDetail(){
   </div>`;
 }
 
+function orderHistoryCard(o){
+  const items=(o.items||[]).map(i=>{
+    const addons=(i.addons||[]).map(a=>`${esc(a.label)}`).join(', ');
+    return `<li>${esc(i.name)}${i.option?` / ${esc(i.option)}`:''} × ${i.quantity}${addons?` <span class="muted">(+${addons})</span>`:''}</li>`;
+  }).join('');
+  return `<article class="my-order">
+    <div class="my-order-head">
+      <div>
+        <p class="my-order-date">${formatWhen(o.created_at)}</p>
+        <p class="muted">주문번호 ${esc(o.id)}</p>
+      </div>
+      <div class="my-order-badges">
+        <span class="status-chip">${esc(o.status_label||o.status)}</span>
+        <strong>${won(o.total)}</strong>
+      </div>
+    </div>
+    <ul class="my-order-items">${items||'<li>상품 정보 없음</li>'}</ul>
+    <div class="my-order-meta">
+      <p><strong>결제/진행</strong> ${esc(o.payment_label||o.status_label||o.status)}</p>
+      <p><strong>받는 분</strong> ${esc(o.customer_name)} · ${esc(o.phone)}</p>
+      <p><strong>배송지</strong> ${esc(o.address)}</p>
+    </div>
+  </article>`;
+}
+
+function renderMypage(){
+  const view=document.querySelector('#mypage-view');
+  const loggedIn=!!authUser;
+  const list=lookupOrder?[lookupOrder]:myOrders;
+  view.innerHTML=`<div class="mypage">
+    <div class="mypage-top">
+      <button type="button" class="detail-back" data-back-home>← 쇼핑 계속하기</button>
+      ${loggedIn?`<button type="button" class="account-btn" data-logout>로그아웃</button>`:''}
+    </div>
+    <h1>주문·결제 내역</h1>
+    <p class="mypage-lead">${loggedIn?`${esc(authUser.name||authUser.username)}님의 주문과 결제 진행 상태입니다.`:'로그인하면 내 주문을 한눈에 볼 수 있습니다. 비회원은 주문번호로 조회하세요.'}</p>
+    ${loggedIn?'':`
+      <div class="mypage-actions">
+        <button type="button" data-go-login>로그인하고 내 주문 보기</button>
+        <button type="button" class="account-btn" data-go-signup>회원가입</button>
+      </div>
+      <form id="lookup-form" class="lookup-form">
+        <h2>비회원 주문 조회</h2>
+        <input name="order_id" required placeholder="주문번호" autocomplete="off">
+        <input name="phone" required type="tel" placeholder="주문 시 연락처" autocomplete="tel">
+        <button type="submit">조회하기</button>
+        <p class="auth-msg" id="lookup-msg" role="status"></p>
+      </form>
+    `}
+    <div class="my-order-list" id="my-order-list">
+      ${list.length?list.map(orderHistoryCard).join(''):`<section class="empty-orders mypage-empty">
+        <h2>${loggedIn?'주문 내역이 없습니다':'조회된 주문이 없습니다'}</h2>
+        <p>${loggedIn?'상품을 담고 주문하면 이곳에 표시됩니다.':'주문 접수 후 안내된 주문번호와 연락처로 조회해 주세요.'}</p>
+      </section>`}
+    </div>
+  </div>`;
+}
+
+async function loadMyOrders(){
+  if(!getToken()){myOrders=[];return}
+  try{myOrders=await request('/api/my/orders')}catch{myOrders=[]}
+}
+
 function showView(){
   const route=parseRoute();
   detailId=route.view==='product'?route.id:null;
   authView=route.view==='login'||route.view==='signup'?route.view:null;
+  mypageView=route.view==='mypage';
   const home=document.querySelector('#home-view');
   const product=document.querySelector('#product-view');
   const auth=document.querySelector('#auth-view');
-  const storeHeader=document.querySelector('header .top #search');
+  const mypage=document.querySelector('#mypage-view');
   const header=document.querySelector('header');
   const footer=document.querySelector('footer');
   if(authView){
-    home.hidden=true;product.hidden=true;auth.hidden=false;
+    home.hidden=true;product.hidden=true;auth.hidden=false;mypage.hidden=true;
     header.classList.add('auth-mode');footer.classList.add('auth-mode');
     auth.innerHTML=authView==='signup'?renderSignup():renderLogin();
     window.scrollTo({top:0,behavior:'smooth'});
+  }else if(mypageView){
+    home.hidden=true;product.hidden=true;auth.hidden=true;mypage.hidden=false;
+    header.classList.remove('auth-mode');footer.classList.remove('auth-mode');
+    loadMyOrders().then(()=>{renderMypage();window.scrollTo({top:0,behavior:'smooth'})});
   }else if(detailId){
-    home.hidden=true;product.hidden=false;auth.hidden=true;
+    home.hidden=true;product.hidden=false;auth.hidden=true;mypage.hidden=true;
     header.classList.remove('auth-mode');footer.classList.remove('auth-mode');
     renderDetail();window.scrollTo({top:0,behavior:'smooth'});
   }else{
-    home.hidden=false;product.hidden=true;auth.hidden=true;
+    home.hidden=false;product.hidden=true;auth.hidden=true;mypage.hidden=true;
     header.classList.remove('auth-mode');footer.classList.remove('auth-mode');
     renderGrid();updateCategoryHint();
   }
-  void storeHeader;
 }
 
 function refreshDetailAddons(root){
@@ -306,29 +382,52 @@ document.querySelector('#auth-view').addEventListener('submit',async e=>{
 document.querySelector('#nav').addEventListener('click',e=>{
   const button=e.target.closest('[data-category]');if(!button)return;
   selected=+button.dataset.category;
-  if(detailId||authView)goHome();
+  if(detailId||authView||mypageView)goHome();
   else{renderGrid();document.querySelector('#catalog').scrollIntoView({behavior:'smooth'})}
 });
 document.querySelector('#search').onsubmit=e=>{
   e.preventDefault();
   search=e.target.querySelector('input').value.trim();
-  if(detailId||authView)goHome();
+  if(detailId||authView||mypageView)goHome();
   else{renderGrid();document.querySelector('#catalog').scrollIntoView({behavior:'smooth'})}
 };
-document.querySelector('#browse').onclick=()=>{if(detailId||authView)goHome();document.querySelector('#catalog').scrollIntoView({behavior:'smooth'})};
+document.querySelector('#browse').onclick=()=>{if(detailId||authView||mypageView)goHome();document.querySelector('#catalog').scrollIntoView({behavior:'smooth'})};
 document.querySelector('.logo').addEventListener('click',e=>{e.preventDefault();goHome()});
 
+document.querySelector('#orders-btn').onclick=()=>goMypage();
 document.querySelector('#account-btn').onclick=async ()=>{
   const mode=document.querySelector('#account-btn').dataset.mode;
-  if(mode==='user'){
-    if(confirm('로그아웃 할까요?')){
-      try{await request('/api/auth/logout',{method:'POST'})}catch{}
-      clearAuth();
-    }
-    return;
-  }
+  if(mode==='user'||mode==='guest'){goMypage();return}
   goLogin();
 };
+
+document.querySelector('#mypage-view').addEventListener('click',async e=>{
+  if(e.target.closest('[data-back-home]')){goHome();return}
+  if(e.target.closest('[data-go-login]')){goLogin();return}
+  if(e.target.closest('[data-go-signup]')){goSignup();return}
+  if(e.target.closest('[data-logout]')){
+    try{await request('/api/auth/logout',{method:'POST'})}catch{}
+    clearAuth();lookupOrder=null;myOrders=[];renderMypage();
+  }
+});
+document.querySelector('#mypage-view').addEventListener('submit',async e=>{
+  if(e.target.id!=='lookup-form')return;
+  e.preventDefault();
+  const msg=document.querySelector('#lookup-msg');
+  const fd=new FormData(e.target);
+  msg.textContent='조회 중…';
+  try{
+    lookupOrder=await request('/api/orders/lookup',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({order_id:String(fd.get('order_id')||'').trim(),phone:String(fd.get('phone')||'').trim()}),
+    });
+    renderMypage();
+  }catch(error){
+    lookupOrder=null;
+    msg.textContent=error.message;
+  }
+});
 
 document.querySelector('#cart-open').onclick=()=>{cartRender();document.querySelector('#cart').showModal()};
 document.querySelector('#cart-close').onclick=()=>document.querySelector('#cart').close();
@@ -347,7 +446,10 @@ document.querySelector('#order').onsubmit=async e=>{
     const values=Object.fromEntries(new FormData(e.target));
     const result=await request('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...values,items:cart.map(x=>({product_id:x.id,option_id:x.optionId||undefined,quantity:x.quantity,addons:(x.addonIds||[]).map(id=>({addon_id:id,quantity:1}))}))})});
     cart=[];persist();cartRender();e.target.reset();
+    localStorage.setItem('unnine-last-order',result.order_id);
     message.textContent=`주문이 접수됐습니다. 번호 ${result.order_id} · 상품 합계 ${won(result.total)} · 결제 대기`;
+    message.innerHTML+=` <button type="button" class="linkish" id="goto-mypage">내역 보기</button>`;
+    document.querySelector('#goto-mypage')?.addEventListener('click',()=>{document.querySelector('#cart').close();goMypage()});
   }catch(error){message.textContent=error.message;button.disabled=!enabled||!cart.length}
 };
 

@@ -57,3 +57,25 @@ header.auth-mode,footer.auth-mode{display:none}
   .auth-shell{padding:4px 0 24px}
   .auth-title{font-size:28px}
 }
+
+.mypage-view{max-width:860px;margin:0 auto;padding:12px 0 48px}
+.mypage-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
+.mypage h1{margin:0 0 8px;font-size:clamp(28px,4vw,36px);letter-spacing:-1px}
+.mypage-lead{margin:0 0 20px;color:#666}
+.mypage-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.lookup-form{display:grid;gap:10px;background:#fff;border:1px solid #eadfd6;border-radius:16px;padding:16px;margin-bottom:20px}
+.lookup-form h2{margin:0;font-size:18px}
+.lookup-form input{border-radius:12px;padding:12px 14px}
+.my-order-list{display:grid;gap:12px}
+.my-order{background:#fff;border:1px solid #eadfd6;border-radius:16px;padding:16px}
+.my-order-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
+.my-order-date{margin:0;font-weight:700}
+.my-order-badges{display:grid;gap:6px;justify-items:end}
+.status-chip{display:inline-block;padding:4px 10px;border-radius:999px;background:#fff7f3;border:1px solid #ffded2;color:#c2410c;font-size:13px;font-weight:700}
+.my-order-items{margin:0 0 12px;padding-left:18px}
+.my-order-meta p{margin:4px 0;color:#444;font-size:14px}
+.mypage-empty{margin-top:8px}
+@media(max-width:640px){
+  .my-order-head{flex-direction:column}
+  .my-order-badges{justify-items:start}
+}

@@ -229,3 +229,24 @@ def test_admin_customers():
     assert updated.json()['note'] == '단골 고객'
     detail = client.get(f"/api/admin/customers/{user['id']}", headers=ADMIN)
     assert detail.status_code == 200 and detail.json()['note'] == '단골 고객'
+
+
+def test_my_orders_and_lookup():
+    login = client.post('/api/auth/login', json={'username': 'buyer01', 'password': 'pass1234'})
+    token = login.json()['token']
+    headers = {'Authorization': f'Bearer {token}'}
+    oid = client.get('/api/products/1').json()['options'][0]['id']
+    created = client.post(
+        '/api/orders',
+        headers=headers,
+        json=payload([dict(product_id=1, option_id=oid, quantity=1)]),
+    )
+    assert created.status_code == 201
+    order_id = created.json()['order_id']
+    mine = client.get('/api/my/orders', headers=headers)
+    assert mine.status_code == 200
+    assert any(o['id'] == order_id for o in mine.json())
+    looked = client.post('/api/orders/lookup', json={'order_id': order_id, 'phone': '01012345678'})
+    assert looked.status_code == 200
+    assert looked.json()['id'] == order_id
+    assert client.post('/api/orders/lookup', json={'order_id': order_id, 'phone': '01000000000'}).status_code == 404

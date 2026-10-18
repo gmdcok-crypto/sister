@@ -205,6 +205,16 @@ class OrderIn(BaseModel):
     items: List[LineIn] = Field(min_length=1, max_length=50)
 
 
+class OrderLookupIn(BaseModel):
+    order_id: str = Field(min_length=4, max_length=80)
+    phone: str = Field(min_length=8, max_length=30)
+
+    @field_validator('order_id', 'phone')
+    @classmethod
+    def strip_lookup(cls, value: str) -> str:
+        return value.strip()
+
+
 class OptionIn(BaseModel):
     id: Optional[int] = Field(default=None, gt=0)
     label: str = Field(min_length=1, max_length=200)
@@ -311,6 +321,14 @@ def get_user_optional(authorization: str = Header(default=''), session: Session 
     if expires < datetime.now(timezone.utc):
         return None
     return session.get(User, row.user_id)
+
+
+def require_user(user: Optional[User] = Depends(get_user_optional)) -> User:
+    if not user:
+        raise HTTPException(401, '로그인이 필요합니다.')
+    if user.blocked:
+        raise HTTPException(403, '이용이 제한된 계정입니다. 고객센터에 문의해 주세요.')
+    return user
 
 
 def create_login_session(session: Session, user: User) -> dict:
@@ -627,6 +645,26 @@ def product(product_id: int, session: Session = Depends(db)):
     return serialize_product(session, p)
 
 
+@app.get('/api/my/orders')
+def my_orders(user: User = Depends(require_user), session: Session = Depends(db)):
+    rows = list(
+        session.scalars(select(Order).where(Order.user_id == user.id).order_by(Order.created_at.desc()).limit(100))
+    )
+    return [serialize_order(session, o) for o in rows]
+
+
+@app.post('/api/orders/lookup')
+def order_lookup(data: OrderLookupIn, session: Session = Depends(db)):
+    order = session.get(Order, data.order_id)
+    phone = ''.join(ch for ch in data.phone if ch.isdigit())
+    if not order:
+        raise HTTPException(404, '주문 정보를 찾을 수 없습니다. 주문번호와 연락처를 확인해 주세요.')
+    stored = ''.join(ch for ch in (order.phone or '') if ch.isdigit())
+    if not phone or phone != stored:
+        raise HTTPException(404, '주문 정보를 찾을 수 없습니다. 주문번호와 연락처를 확인해 주세요.')
+    return serialize_order(session, order)
+
+
 @app.post('/api/orders', status_code=201)
 def order(data: OrderIn, session: Session = Depends(db), user: Optional[User] = Depends(get_user_optional)):
     if not settings.orders_enabled:
@@ -752,6 +790,8 @@ def serialize_order(session: Session, o: Order) -> dict:
         'total': o.total,
         'status': o.status,
         'status_label': ORDER_STATUS_LABELS.get(o.status, o.status),
+        'payment_status': o.status,
+        'payment_label': ORDER_STATUS_LABELS.get(o.status, o.status),
         'created_at': o.created_at,
         'items': items,
     }
