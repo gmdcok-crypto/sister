@@ -175,6 +175,23 @@ def test_z_admin_auth_and_products():
     assert keep_id in garlic['option_ids']
 
 
+def test_z_admin_order_status():
+    oid = client.get('/api/products/1').json()['options'][0]['id']
+    created = client.post('/api/orders', json=payload([dict(product_id=1, option_id=oid, quantity=1)]))
+    assert created.status_code == 201
+    order_id = created.json()['order_id']
+    listed = client.get('/api/admin/orders', headers=ADMIN).json()
+    assert any(o['id'] == order_id for o in listed)
+    changed = client.put(
+        f'/api/admin/orders/{order_id}/status',
+        headers=ADMIN,
+        json={'status': 'preparing'},
+    )
+    assert changed.status_code == 200
+    assert changed.json()['status'] == 'preparing'
+    assert changed.json()['status_label'] == '상품 준비중'
+
+
 def test_orders_disabled():
     settings.orders_enabled = False
     try:

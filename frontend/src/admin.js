@@ -5,15 +5,26 @@ const won = (n) => Number(n).toLocaleString('ko-KR') + '원'
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 
 const KEY = 'unnine-admin-key'
+const STATUSES = [
+  ['pending_payment', '결제 대기'],
+  ['paid', '결제 완료'],
+  ['preparing', '상품 준비중'],
+  ['shipping', '배송중'],
+  ['completed', '완료'],
+  ['cancelled', '취소'],
+]
+
 let adminKey = localStorage.getItem(KEY) || ''
 let products = []
 let categories = []
+let orders = []
+let tab = 'products'
 
 const app = document.querySelector('#app')
 app.innerHTML = `
   <div class="wrap">
     <div class="top">
-      <h1>상품 관리</h1>
+      <h1 id="page-title">상품 관리</h1>
       <div class="auth">
         <input id="admin-key" type="password" placeholder="관리자 키" autocomplete="current-password" value="${esc(adminKey)}">
         <button type="button" id="login">불러오기</button>
@@ -21,8 +32,13 @@ app.innerHTML = `
         <a href="/">스토어로</a>
       </div>
     </div>
+    <nav class="tabs" id="tabs" hidden>
+      <button type="button" class="tab is-active" data-tab="products">상품</button>
+      <button type="button" class="tab" data-tab="orders">주문</button>
+    </nav>
     <p class="status" id="status">관리자 키를 입력한 뒤 불러오기를 눌러 주세요.</p>
-    <div class="list" id="list"></div>
+    <div id="panel-products" class="list"></div>
+    <div id="panel-orders" class="order-list" hidden></div>
   </div>
 `
 
@@ -145,6 +161,45 @@ function card(p) {
   `
 }
 
+function formatWhen(value) {
+  if (!value) return ''
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return String(value)
+  return d.toLocaleString('ko-KR')
+}
+
+function orderCard(o) {
+  const items = (o.items || []).map((i) => {
+    const addons = (i.addons || []).map((a) => `${esc(a.label)}×${a.quantity}`).join(', ')
+    return `<li>${esc(i.name)} / ${esc(i.option || '-')} × ${i.quantity} · ${won(i.unit_price)}${addons ? `<br><span class="muted">추가: ${addons}</span>` : ''}</li>`
+  }).join('')
+  return `
+    <article class="order-card" data-order="${esc(o.id)}">
+      <div class="order-head">
+        <div>
+          <h2>${esc(o.customer_name)}</h2>
+          <p class="muted">${formatWhen(o.created_at)} · ${esc(o.id)}</p>
+        </div>
+        <strong>${won(o.total)}</strong>
+      </div>
+      <div class="order-meta">
+        <p><strong>연락처</strong> ${esc(o.phone)}</p>
+        <p><strong>주소</strong> ${esc(o.address)}</p>
+      </div>
+      <ul class="order-items">${items || '<li>상품 없음</li>'}</ul>
+      <div class="order-actions">
+        <label>상태
+          <select data-order-status="${esc(o.id)}">
+            ${STATUSES.map(([value, label]) => `<option value="${value}" ${o.status === value ? 'selected' : ''}>${label}</option>`).join('')}
+          </select>
+        </label>
+        <button type="button" data-save-status="${esc(o.id)}">상태 저장</button>
+        <span class="msg" data-order-msg hidden></span>
+      </div>
+    </article>
+  `
+}
+
 function readOptions(cardEl) {
   return [...cardEl.querySelectorAll('[data-option-index]')].map((row) => {
     const label = row.querySelector('[data-field="label"]').value.trim()
@@ -167,9 +222,29 @@ function readAddons(cardEl) {
   }).filter((o) => o.label)
 }
 
-function render() {
-  document.querySelector('#list').innerHTML = products.map(card).join('') || '<p>등록된 상품이 없습니다.</p>'
-  document.querySelector('#new-product').hidden = !categories.length
+function setTab(next) {
+  tab = next
+  document.querySelectorAll('.tab').forEach((el) => el.classList.toggle('is-active', el.dataset.tab === tab))
+  document.querySelector('#panel-products').hidden = tab !== 'products'
+  document.querySelector('#panel-orders').hidden = tab !== 'orders'
+  document.querySelector('#new-product').hidden = tab !== 'products' || !categories.length
+  document.querySelector('#page-title').textContent = tab === 'orders' ? '주문 관리' : '상품 관리'
+  if (tab === 'products') {
+    setStatus(`상품 ${products.filter((p) => p.id !== 'new').length}개`)
+  } else {
+    setStatus(`주문 ${orders.length}건`)
+  }
+}
+
+function renderProducts() {
+  document.querySelector('#panel-products').innerHTML = products.map(card).join('') || '<p>등록된 상품이 없습니다.</p>'
+  document.querySelector('#new-product').hidden = tab !== 'products' || !categories.length
+}
+
+function renderOrders() {
+  document.querySelector('#panel-orders').innerHTML = orders.length
+    ? orders.map(orderCard).join('')
+    : '<p>아직 주문이 없습니다. 스토어에서 주문이 들어오면 여기에 표시됩니다.</p>'
 }
 
 async function load() {
@@ -181,16 +256,22 @@ async function load() {
   localStorage.setItem(KEY, adminKey)
   setStatus('불러오는 중…')
   try {
-    ;[categories, products] = await Promise.all([
+    ;[categories, products, orders] = await Promise.all([
       request('/api/categories'),
       request('/api/admin/products'),
+      request('/api/admin/orders'),
     ])
-    render()
-    setStatus(`상품 ${products.length}개`)
+    document.querySelector('#tabs').hidden = false
+    renderProducts()
+    renderOrders()
+    setTab(tab)
   } catch (error) {
     products = []
+    orders = []
+    document.querySelector('#tabs').hidden = true
     document.querySelector('#new-product').hidden = true
-    render()
+    renderProducts()
+    renderOrders()
     setStatus(error.message, true)
   }
 }
@@ -199,7 +280,13 @@ document.querySelector('#login').onclick = load
 document.querySelector('#admin-key').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') load()
 })
+document.querySelector('#tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-tab]')
+  if (!btn) return
+  setTab(btn.dataset.tab)
+})
 document.querySelector('#new-product').onclick = () => {
+  setTab('products')
   if (!categories.length) {
     setStatus('카테고리를 먼저 불러와 주세요.', true)
     return
@@ -209,14 +296,14 @@ document.querySelector('#new-product').onclick = () => {
     return
   }
   products = [blankProduct(), ...products]
-  render()
+  renderProducts()
   document.querySelector('[data-product="new"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-document.querySelector('#list').addEventListener('click', async (e) => {
+document.querySelector('#panel-products').addEventListener('click', async (e) => {
   if (e.target.closest('[data-cancel-new]')) {
     products = products.filter((p) => p.id !== 'new')
-    render()
+    renderProducts()
     return
   }
 
@@ -247,7 +334,7 @@ document.querySelector('#list').addEventListener('click', async (e) => {
   const addAddon = e.target.closest('[data-add-addon]')
   if (addAddon) {
     const cardEl = addAddon.closest('[data-product]')
-    const product = products.find((p) => p.id === +cardEl.dataset.product)
+    const product = products.find((p) => String(p.id) === String(cardEl.dataset.product))
     const box = cardEl.querySelector('[data-addons]')
     const i = box.querySelectorAll('[data-addon-index]').length
     box.insertAdjacentHTML('beforeend', `
@@ -319,7 +406,7 @@ document.querySelector('#list').addEventListener('click', async (e) => {
       const idx = products.findIndex((p) => p.id === saveId)
       if (idx >= 0) products[idx] = updated
     }
-    render()
+    renderProducts()
     const fresh = document.querySelector(`[data-product="${updated.id}"]`)
     fresh?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     const freshMsg = fresh?.querySelector('[data-msg]')
@@ -338,7 +425,7 @@ document.querySelector('#list').addEventListener('click', async (e) => {
   }
 })
 
-document.querySelector('#list').addEventListener('change', async (e) => {
+document.querySelector('#panel-products').addEventListener('change', async (e) => {
   const input = e.target.closest('[data-upload]')
   if (!input || !input.files?.[0]) return
   const productId = +input.dataset.upload
@@ -361,6 +448,39 @@ document.querySelector('#list').addEventListener('change', async (e) => {
     msg.textContent = error.message
   } finally {
     input.value = ''
+  }
+})
+
+document.querySelector('#panel-orders').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-save-status]')
+  if (!btn) return
+  const orderId = btn.dataset.saveStatus
+  const cardEl = e.target.closest('[data-order]')
+  const select = cardEl.querySelector('[data-order-status]')
+  const msg = cardEl.querySelector('[data-order-msg]')
+  btn.disabled = true
+  msg.hidden = false
+  msg.className = 'msg'
+  msg.textContent = '저장 중…'
+  try {
+    const updated = await request(`/api/admin/orders/${encodeURIComponent(orderId)}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: select.value }),
+    })
+    const idx = orders.findIndex((o) => o.id === orderId)
+    if (idx >= 0) orders[idx] = updated
+    renderOrders()
+    const fresh = document.querySelector(`[data-order="${CSS.escape(orderId)}"] [data-order-msg]`)
+    if (fresh) {
+      fresh.hidden = false
+      fresh.className = 'msg'
+      fresh.textContent = `상태 변경: ${updated.status_label || updated.status}`
+    }
+  } catch (error) {
+    msg.className = 'err'
+    msg.textContent = error.message
+    btn.disabled = false
   }
 })
 

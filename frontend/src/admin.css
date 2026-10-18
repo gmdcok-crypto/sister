@@ -7,8 +7,20 @@ button.danger{background:#fff;color:#b42318;border:1px solid #f0c7c2}
 button:disabled{opacity:.55;cursor:not-allowed}
 input,select,textarea{width:100%;border:1px solid #ddd;border-radius:10px;padding:10px;background:#fff}
 .wrap{max-width:1100px;margin:0 auto;padding:24px}
-.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:20px}
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
 .top h1{margin:0;font-size:24px}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{background:#fff;color:#333;border:1px solid #ddd}
+.tab.is-active{background:#ff633e;color:#fff;border-color:#ff633e}
+.order-list{display:grid;gap:14px}
+.order-card{background:#fff;border:1px solid #eadfd6;border-radius:16px;padding:16px}
+.order-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
+.order-head h2{margin:0;font-size:18px}
+.order-meta p{margin:4px 0}
+.order-items{margin:10px 0;padding-left:18px}
+.order-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.order-actions label{display:flex;gap:8px;align-items:center}
+.order-actions select{width:auto;min-width:140px}
 .auth{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .auth input{width:min(320px,70vw)}
 .status{min-height:1.4em;color:#666;margin:0 0 16px}

@@ -540,39 +540,77 @@ def order(data: OrderIn, session: Session = Depends(db)):
     return {'order_id': receipt.id, 'total': total, 'status': receipt.status}
 
 
+ORDER_STATUSES = ('pending_payment', 'paid', 'preparing', 'shipping', 'completed', 'cancelled')
+ORDER_STATUS_LABELS = {
+    'pending_payment': '결제 대기',
+    'paid': '결제 완료',
+    'preparing': '상품 준비중',
+    'shipping': '배송중',
+    'completed': '완료',
+    'cancelled': '취소',
+}
+
+
+class OrderStatusIn(BaseModel):
+    status: str
+
+    @field_validator('status')
+    @classmethod
+    def valid_status(cls, value: str) -> str:
+        value = value.strip()
+        if value not in ORDER_STATUSES:
+            raise ValueError('주문 상태를 확인해 주세요.')
+        return value
+
+
+def serialize_order(session: Session, o: Order) -> dict:
+    items = []
+    for i in session.scalars(select(OrderItem).where(OrderItem.order_id == o.id)):
+        addons = [
+            {'label': a.label, 'unit_price': a.unit_price, 'quantity': a.quantity}
+            for a in session.scalars(select(OrderItemAddon).where(OrderItemAddon.order_item_id == i.id))
+        ]
+        items.append(
+            {
+                'name': i.product_name,
+                'option': i.option_label,
+                'quantity': i.quantity,
+                'unit_price': i.unit_price,
+                'addons': addons,
+            }
+        )
+    return {
+        'id': o.id,
+        'customer_name': o.customer_name,
+        'phone': o.phone,
+        'address': o.address,
+        'total': o.total,
+        'status': o.status,
+        'status_label': ORDER_STATUS_LABELS.get(o.status, o.status),
+        'created_at': o.created_at,
+        'items': items,
+    }
+
+
 @app.get('/api/admin/orders')
 def admin_orders(_: None = Depends(require_admin), session: Session = Depends(db)):
     orders = session.scalars(select(Order).order_by(Order.created_at.desc()).limit(100))
-    result = []
-    for o in orders:
-        items = []
-        for i in session.scalars(select(OrderItem).where(OrderItem.order_id == o.id)):
-            addons = [
-                {'label': a.label, 'unit_price': a.unit_price, 'quantity': a.quantity}
-                for a in session.scalars(select(OrderItemAddon).where(OrderItemAddon.order_item_id == i.id))
-            ]
-            items.append(
-                {
-                    'name': i.product_name,
-                    'option': i.option_label,
-                    'quantity': i.quantity,
-                    'unit_price': i.unit_price,
-                    'addons': addons,
-                }
-            )
-        result.append(
-            {
-                'id': o.id,
-                'customer_name': o.customer_name,
-                'phone': o.phone,
-                'address': o.address,
-                'total': o.total,
-                'status': o.status,
-                'created_at': o.created_at,
-                'items': items,
-            }
-        )
-    return result
+    return [serialize_order(session, o) for o in orders]
+
+
+@app.put('/api/admin/orders/{order_id}/status')
+def admin_update_order_status(
+    order_id: str,
+    data: OrderStatusIn,
+    _: None = Depends(require_admin),
+    session: Session = Depends(db),
+):
+    order = session.get(Order, order_id)
+    if not order:
+        raise HTTPException(404, '주문을 찾을 수 없습니다.')
+    order.status = data.status
+    session.commit()
+    return serialize_order(session, order)
 
 
 @app.get('/api/admin/products')
