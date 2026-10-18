@@ -17,6 +17,7 @@ app.innerHTML = `
       <div class="auth">
         <input id="admin-key" type="password" placeholder="관리자 키" autocomplete="current-password" value="${esc(adminKey)}">
         <button type="button" id="login">불러오기</button>
+        <button type="button" id="new-product" class="secondary" hidden>새 상품 추가</button>
         <a href="/">스토어로</a>
       </div>
     </div>
@@ -77,24 +78,42 @@ function addonRows(product) {
   `).join('')
 }
 
+function blankProduct() {
+  const category_id = categories[0]?.id || 1
+  return {
+    id: 'new',
+    name: '',
+    category_id,
+    active: true,
+    image: '',
+    option: '기본',
+    price: 0,
+    options: [{ id: null, label: '기본', price: 0 }],
+    addons: [],
+  }
+}
+
 function card(p) {
+  const isNew = p.id === 'new'
   const cat = categories.find((c) => c.id === p.category_id)
+  const previewId = isNew ? 'preview-new' : `preview-${p.id}`
   return `
-    <article class="card" data-product="${p.id}">
+    <article class="card ${isNew ? 'is-new' : ''}" data-product="${p.id}">
       <div>
-        <img src="${esc(p.image || '')}" alt="${esc(p.name)}" id="preview-${p.id}">
+        <img src="${esc(p.image || '')}" alt="${esc(p.name || '새 상품')}" id="${previewId}" style="background:#fcf2ec">
         <div class="actions">
+          ${isNew ? '<p class="muted">저장 후 이미지를 업로드할 수 있습니다.</p>' : `
           <label class="secondary" style="display:inline-block;padding:10px 16px;border:1px solid #ddd;border-radius:10px;background:#fff;cursor:pointer">
             이미지 업로드
             <input type="file" accept="image/jpeg,image/png,image/webp" hidden data-upload="${p.id}">
-          </label>
+          </label>`}
         </div>
       </div>
       <div class="meta">
-        <h2>${esc(p.name)}</h2>
-        <p class="muted">#${p.id} · ${esc(cat?.name || '카테고리')}</p>
+        <h2>${isNew ? '새 상품' : esc(p.name)}</h2>
+        <p class="muted">${isNew ? '신규 등록' : `#${p.id} · ${esc(cat?.name || '카테고리')}`}</p>
         <div class="row">
-          <label>상품명<input data-field="name" value="${esc(p.name)}"></label>
+          <label>상품명<input data-field="name" value="${esc(p.name)}" placeholder="상품명"></label>
           <label>카테고리
             <select data-field="category_id">
               ${categories.map((c) => `<option value="${c.id}" ${c.id === p.category_id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
@@ -117,7 +136,8 @@ function card(p) {
         <div class="addons" data-addons>${addonRows(p)}</div>
         <div class="actions">
           <button type="button" class="secondary" data-add-addon>추가옵션 추가</button>
-          <button type="button" data-save="${p.id}">저장</button>
+          <button type="button" data-save="${p.id}">${isNew ? '상품 등록' : '저장'}</button>
+          ${isNew ? '<button type="button" class="secondary" data-cancel-new>취소</button>' : ''}
         </div>
         <p class="msg" data-msg hidden></p>
       </div>
@@ -149,6 +169,7 @@ function readAddons(cardEl) {
 
 function render() {
   document.querySelector('#list').innerHTML = products.map(card).join('') || '<p>등록된 상품이 없습니다.</p>'
+  document.querySelector('#new-product').hidden = !categories.length
 }
 
 async function load() {
@@ -168,6 +189,7 @@ async function load() {
     setStatus(`상품 ${products.length}개`)
   } catch (error) {
     products = []
+    document.querySelector('#new-product').hidden = true
     render()
     setStatus(error.message, true)
   }
@@ -177,8 +199,27 @@ document.querySelector('#login').onclick = load
 document.querySelector('#admin-key').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') load()
 })
+document.querySelector('#new-product').onclick = () => {
+  if (!categories.length) {
+    setStatus('카테고리를 먼저 불러와 주세요.', true)
+    return
+  }
+  if (products.some((p) => p.id === 'new')) {
+    document.querySelector('[data-product="new"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    return
+  }
+  products = [blankProduct(), ...products]
+  render()
+  document.querySelector('[data-product="new"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 document.querySelector('#list').addEventListener('click', async (e) => {
+  if (e.target.closest('[data-cancel-new]')) {
+    products = products.filter((p) => p.id !== 'new')
+    render()
+    return
+  }
+
   const addBtn = e.target.closest('[data-add-option]')
   if (addBtn) {
     const box = addBtn.closest('.meta').querySelector('[data-options]')
@@ -227,11 +268,21 @@ document.querySelector('#list').addEventListener('click', async (e) => {
     return
   }
 
-  const saveId = +e.target.closest('[data-save]')?.dataset.save
-  if (!saveId) return
+  const saveBtn = e.target.closest('[data-save]')
+  if (!saveBtn) return
+  const saveRaw = saveBtn.dataset.save
+  const isNew = saveRaw === 'new'
+  const saveId = isNew ? 'new' : +saveRaw
   const cardEl = e.target.closest('[data-product]')
   const msg = cardEl.querySelector('[data-msg]')
+  const name = cardEl.querySelector('[data-field="name"]').value.trim()
   const options = readOptions(cardEl)
+  if (!name) {
+    msg.hidden = false
+    msg.className = 'err'
+    msg.textContent = '상품명을 입력해 주세요.'
+    return
+  }
   if (!options.length) {
     msg.hidden = false
     msg.className = 'err'
@@ -239,35 +290,51 @@ document.querySelector('#list').addEventListener('click', async (e) => {
     return
   }
   const body = {
-    name: cardEl.querySelector('[data-field="name"]').value.trim(),
+    name,
     category_id: Number(cardEl.querySelector('[data-field="category_id"]').value),
     active: cardEl.querySelector('[data-field="active"]').value === 'true',
     options,
     addons: readAddons(cardEl),
   }
-  e.target.disabled = true
+  saveBtn.disabled = true
   msg.hidden = false
   msg.className = 'msg'
-  msg.textContent = '저장 중…'
+  msg.textContent = isNew ? '등록 중…' : '저장 중…'
   try {
-    const updated = await request(`/api/admin/products/${saveId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    const idx = products.findIndex((p) => p.id === saveId)
-    if (idx >= 0) products[idx] = updated
-    render()
-    const fresh = document.querySelector(`[data-product="${saveId}"] [data-msg]`)
-    if (fresh) {
-      fresh.hidden = false
-      fresh.className = 'msg'
-      fresh.textContent = `저장됨 · 본옵션 ${updated.options.length} · 추가옵션 ${(updated.addons || []).length}`
+    const updated = isNew
+      ? await request('/api/admin/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+      : await request(`/api/admin/products/${saveId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+    if (isNew) {
+      products = products.filter((p) => p.id !== 'new')
+      products.unshift(updated)
+    } else {
+      const idx = products.findIndex((p) => p.id === saveId)
+      if (idx >= 0) products[idx] = updated
     }
+    render()
+    const fresh = document.querySelector(`[data-product="${updated.id}"]`)
+    fresh?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const freshMsg = fresh?.querySelector('[data-msg]')
+    if (freshMsg) {
+      freshMsg.hidden = false
+      freshMsg.className = 'msg'
+      freshMsg.textContent = isNew
+        ? `등록됨 #${updated.id} · 이제 이미지를 업로드하세요`
+        : `저장됨 · 본옵션 ${updated.options.length} · 추가옵션 ${(updated.addons || []).length}`
+    }
+    setStatus(`상품 ${products.filter((p) => p.id !== 'new').length}개`)
   } catch (error) {
     msg.className = 'err'
     msg.textContent = error.message
-    e.target.disabled = false
+    saveBtn.disabled = false
   }
 })
 

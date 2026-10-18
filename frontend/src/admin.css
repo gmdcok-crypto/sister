@@ -14,6 +14,7 @@ input,select,textarea{width:100%;border:1px solid #ddd;border-radius:10px;paddin
 .status{min-height:1.4em;color:#666;margin:0 0 16px}
 .list{display:grid;gap:14px}
 .card{display:grid;grid-template-columns:140px 1fr;gap:16px;background:#fff;border:1px solid #eadfd6;border-radius:16px;padding:16px}
+.card.is-new{border-color:#ff633e;box-shadow:0 0 0 1px #ff633e33}
 .card img{width:140px;height:140px;object-fit:cover;border-radius:12px;background:#fcf2ec}
 .meta h2{margin:0 0 6px;font-size:18px}
 .meta .muted{color:#777;margin:0 0 10px}
