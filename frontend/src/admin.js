@@ -242,9 +242,26 @@ function renderProducts() {
 }
 
 function renderOrders() {
-  document.querySelector('#panel-orders').innerHTML = orders.length
-    ? orders.map(orderCard).join('')
-    : '<p>아직 주문이 없습니다. 스토어에서 주문이 들어오면 여기에 표시됩니다.</p>'
+  const panel = document.querySelector('#panel-orders')
+  if (orders.length) {
+    panel.innerHTML = orders.map(orderCard).join('')
+    return
+  }
+  panel.innerHTML = `
+    <section class="empty-orders">
+      <h2>아직 주문이 없습니다</h2>
+      <p>스토어에서 주문이 접수되면 이 탭에 목록이 나타납니다.</p>
+      <ul>
+        <li>고객이 장바구니에서 배송 정보를 넣고 주문합니다.</li>
+        <li>여기에 주문자·연락처·주소·상품·금액이 표시됩니다.</li>
+        <li>상태를 바꿔 결제 대기 → 준비중 → 배송중 → 완료로 관리합니다.</li>
+      </ul>
+      <p class="muted">주문이 안 들어오면 Railway의 <code>ORDERS_ENABLED=true</code> 설정을 확인해 주세요.</p>
+      <div class="status-guide">
+        ${STATUSES.map(([, label]) => `<span>${label}</span>`).join('')}
+      </div>
+    </section>
+  `
 }
 
 async function load() {
