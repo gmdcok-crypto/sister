@@ -199,3 +199,17 @@ def test_orders_disabled():
         assert client.post('/api/orders', json=payload([dict(product_id=1, option_id=oid, quantity=1)])).status_code == 503
     finally:
         settings.orders_enabled = True
+
+
+def test_auth_register_login():
+    created = client.post(
+        '/api/auth/register',
+        json={'username': 'buyer01', 'password': 'pass1234', 'name': '홍길동', 'phone': '01011112222'},
+    )
+    assert created.status_code == 201
+    token = created.json()['token']
+    me = client.get('/api/auth/me', headers={'Authorization': f'Bearer {token}'})
+    assert me.status_code == 200 and me.json()['username'] == 'buyer01'
+    login = client.post('/api/auth/login', json={'username': 'buyer01', 'password': 'pass1234'})
+    assert login.status_code == 200 and login.json()['token']
+    assert client.get('/api/auth/social/kakao/start').status_code == 503

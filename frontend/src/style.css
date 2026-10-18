@@ -21,3 +21,39 @@
 @media(max-width:800px){
   .detail-grid{grid-template-columns:1fr;gap:20px}
 }
+
+.account-btn{background:#fff;color:#333;border:1px solid #ffded2;border-radius:24px}
+header.auth-mode,footer.auth-mode{display:none}
+.auth-view{max-width:480px;margin:0 auto;padding:8px 16px 48px}
+.auth-shell{background:#fff;border-radius:16px;padding:8px 4px 32px}
+.auth-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.auth-icon{background:transparent;color:#333;font-size:28px;line-height:1;padding:4px 10px}
+.auth-brand{display:flex;align-items:center;gap:8px;text-decoration:none;color:#222;font-weight:700}
+.auth-brand img{width:42px;height:42px;object-fit:contain}
+.auth-title{margin:0 0 10px;font-size:32px;letter-spacing:-1px}
+.auth-lead{margin:0 0 22px;color:#777;line-height:1.5}
+.btn-kakao,.btn-naver,.btn-member,.btn-member-primary,.btn-guest{width:100%;border-radius:12px;padding:16px;font-size:16px;font-weight:700;margin:0 0 10px}
+.btn-kakao{background:#fee500;color:#191919}
+.btn-naver{background:#03c75a;color:#fff}
+.social-ico{display:inline-block;width:1.2em;margin-right:4px}
+.auth-or{display:flex;align-items:center;gap:12px;margin:18px 0;color:#999;font-size:14px}
+.auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:#e5e5e5}
+.auth-or span{flex:0 0 auto}
+.auth-form{display:grid;gap:10px}
+.auth-form input{border-radius:12px;padding:14px 14px;border:1px solid #ddd}
+.pw-wrap{position:relative;display:block}
+.pw-wrap input{width:100%;padding-right:44px}
+.pw-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;color:#888;padding:6px 10px;border:0}
+.save-id{display:flex;align-items:center;gap:8px;font-size:14px;color:#555}
+.save-id input{width:auto}
+.btn-member{background:#ececec;color:#222}
+.btn-member-primary{background:#ff633e;color:#fff}
+.auth-links{display:flex;gap:14px;align-items:center;margin:14px 0 18px;font-size:14px;color:#777}
+.auth-links .signup-link{margin-left:auto;color:#333;font-weight:700}
+.linkish{background:transparent;color:inherit;padding:0;border:0;border-radius:0;font-weight:inherit}
+.btn-guest{background:#fff;color:#222;border:1px solid #ccc}
+.auth-msg{min-height:1.4em;margin:12px 0 0;color:#b42318;font-size:14px}
+@media(max-width:640px){
+  .auth-shell{padding:4px 0 24px}
+  .auth-title{font-size:28px}
+}

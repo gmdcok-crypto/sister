@@ -53,6 +53,10 @@ POST /api/orders: customer_name, phone, address, items[{product_id, option_id, q
 
 관리자 화면: 프론트 `/admin` (Netlify). 키는 브라우저에만 입력하며 코드/환경변수에 넣지 않음. 추가옵션은 특정 본옵션에만 노출되도록 연계 가능(미지정 시 전체).
 
+회원: `/#/login`, `/#/signup`. 주문 접수 시 로그인·회원가입 또는 비회원 구매 선택.  
+`POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`.  
+카카오/네이버는 UI 제공, 실제 연동은 `KAKAO_REST_API_KEY`+`KAKAO_REDIRECT_URI` / `NAVER_CLIENT_ID`+`NAVER_REDIRECT_URI` 설정 후 사용.
+
 ## 검증
 
 백엔드: `python -m pytest tests -q` (격리된 SQLite로 API 로직 검증, Railway MySQL 통합 검증은 별도 필요).

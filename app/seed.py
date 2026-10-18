@@ -33,6 +33,14 @@ def ensure_order_item_option_column():
     )
 
 
+def ensure_order_user_column():
+    _add_column_if_missing(
+        'orders',
+        'user_id',
+        'ALTER TABLE orders ADD COLUMN user_id INTEGER NULL',
+    )
+
+
 def category_rows(catalog):
     rows = []
     for i, item in enumerate(catalog['categories'], 1):
@@ -71,6 +79,7 @@ def main():
     Base.metadata.create_all(engine)
     ensure_category_image_column()
     ensure_order_item_option_column()
+    ensure_order_user_column()
     catalog = json.loads((Path(__file__).parents[1] / 'catalog.json').read_text(encoding='utf-8'))
     with SessionLocal() as session:
         for row in category_rows(catalog):

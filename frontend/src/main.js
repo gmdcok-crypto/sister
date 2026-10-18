@@ -2,8 +2,19 @@ import './style.css';
 const api=(import.meta.env.VITE_API_URL || '').replace(/\/$/,'');
 const won=n=>n.toLocaleString('ko-KR')+'원';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let products=[], categories=[], selected=0, search='', enabled=false, detailId=null;
+const AUTH_KEY='unnine-auth';
+const GUEST_KEY='unnine-guest';
+let products=[], categories=[], selected=0, search='', enabled=false, detailId=null, authView=null, authUser=null, social={kakao:false,naver:false};
 let cart=[]; try {cart=JSON.parse(localStorage.getItem('unnine-cart')||'[]').filter(x=>Number.isInteger(x.id)&&Number.isInteger(x.quantity)&&x.quantity>0&&x.quantity<=100)}catch{}
+
+function getToken(){try{return JSON.parse(localStorage.getItem(AUTH_KEY)||'null')?.token||''}catch{return ''}}
+function isGuest(){return localStorage.getItem(GUEST_KEY)==='1'}
+function setGuest(){localStorage.setItem(GUEST_KEY,'1')}
+function clearGuest(){localStorage.removeItem(GUEST_KEY)}
+function saveAuth(data){localStorage.setItem(AUTH_KEY,JSON.stringify(data));clearGuest();authUser=data.user;updateAccountUI()}
+function clearAuth(){localStorage.removeItem(AUTH_KEY);authUser=null;updateAccountUI()}
+function canCheckout(){return !!getToken()||isGuest()}
+
 function opts(p){return (p.options&&p.options.length)?p.options:[{id:0,label:p.option||'기본',price:p.price}]}
 function pickOpt(p,optionId){const list=opts(p);return list.find(o=>o.id===optionId)||list[0]}
 function addonsFor(p,optionId){return (p.addons||[]).filter(a=>!a.option_ids?.length||a.option_ids.includes(optionId))}
@@ -11,17 +22,95 @@ function pickAddons(p,optionId,addonIds){const avail=addonsFor(p,optionId);const
 function lineUnit(p,optionId,addonIds){const o=pickOpt(p,optionId);return o.price+pickAddons(p,optionId,addonIds).reduce((n,a)=>n+a.price,0)}
 function sameAddons(a,b){const x=[...(a||[])].sort((i,j)=>i-j).join(',');const y=[...(b||[])].sort((i,j)=>i-j).join(',');return x===y}
 function image(p,cls='photo'){return `<img class="${cls}" src="${esc(p.image)}" alt="${esc(p.name)} 연출 사진" loading="lazy" decoding="async">`}
-async function request(path,options){const r=await fetch(api+path,options);const data=await r.json();if(!r.ok)throw new Error(typeof data.detail==='string'?data.detail:'입력 내용을 확인해 주세요.');return data}
+async function request(path,options={}){
+  const headers={...(options.headers||{})};
+  const token=getToken();
+  if(token) headers.Authorization=`Bearer ${token}`;
+  const r=await fetch(api+path,{...options,headers});
+  const data=await r.json();
+  if(!r.ok)throw new Error(typeof data.detail==='string'?data.detail:'입력 내용을 확인해 주세요.');
+  return data;
+}
 
-document.querySelector('#app').innerHTML=`<header><div class="top"><a href="#/" class="logo" aria-label="언니네닭 홈"><img src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/unnine-logo-transparent.webp?v=1" alt="언니네닭"></a><form id="search"><input aria-label="상품 검색" placeholder="어떤 상품을 찾으세요?"><button>검색</button></form><button id="cart-open">장바구니 <span id="count">0</span></button></div></header><main>
+const LOGO='https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/unnine-logo-transparent.webp?v=1';
+
+document.querySelector('#app').innerHTML=`<header><div class="top"><a href="#/" class="logo" aria-label="언니네닭 홈"><img src="${LOGO}" alt="언니네닭"></a><form id="search"><input aria-label="상품 검색" placeholder="어떤 상품을 찾으세요?"><button>검색</button></form><button type="button" id="account-btn" class="account-btn">로그인</button><button id="cart-open">장바구니 <span id="count">0</span></button></div></header><main>
 <section id="home-view"><section class="hero"><div><p class="accent">우리 집 식탁을 위한 장보기</p><h1>맛있는 선택,<br>언니네닭에서.</h1><p>닭고기부터 다양한 육류까지.<br>필요한 상품을 편리하게 만나보세요.</p><button id="browse">상품 둘러보기</button></div><div class="hero-media" aria-roledescription="carousel" aria-label="추천 상품 이미지"><div class="hero-slides"><img class="hero-slide is-active" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-products.webp?v=4" alt="닭고기 모음" decoding="async"><img class="hero-slide" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-beef-pork.webp?v=1" alt="소고기·돼지고기 모음" decoding="async"><img class="hero-slide" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-roast-chicken-duck.webp?v=1" alt="로스팅 치킨·오리 모음" decoding="async"></div><div class="hero-dots" role="tablist" aria-label="슬라이드"><button type="button" class="hero-dot is-active" aria-label="1번째 이미지" data-hero="0"></button><button type="button" class="hero-dot" aria-label="2번째 이미지" data-hero="1"></button><button type="button" class="hero-dot" aria-label="3번째 이미지" data-hero="2"></button></div></div></section><div class="category-nav-wrap"><nav id="nav" class="category-nav" aria-label="상품 카테고리"></nav><span class="category-nav-hint" aria-hidden="true">›</span></div><section id="catalog"><div class="title"><h2 id="title">전체상품</h2><span id="results" aria-live="polite"></span></div><p id="error" role="alert"></p><div id="grid" class="grid"></div></section></section>
 <section id="product-view" class="product-view" hidden></section>
+<section id="auth-view" class="auth-view" hidden></section>
 </main><footer>언니네닭 <p>상품·가격은 제공된 캡처를 바탕으로 등록한 초기 자료입니다. 상품 사진은 AI로 제작한 연출 이미지입니다.</p></footer><dialog id="cart"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><label>배송 주소<input name="address" required minlength="5" maxlength="500" autocomplete="street-address"></label><p>결제·배송비 연동 전입니다. 현재 기능은 결제 대기 상태의 주문 접수입니다.</p><button id="submit" type="submit">주문 접수</button><p id="order-message" role="status"></p></form></dialog>`;
 
 function persist(){localStorage.setItem('unnine-cart',JSON.stringify(cart));document.querySelector('#count').textContent=cart.reduce((n,x)=>n+x.quantity,0)}
-function parseRoute(){const h=(location.hash||'#/').replace(/^#/, '');const m=h.match(/^\/?product\/(\d+)/);return m?{view:'product',id:+m[1]}:{view:'home',id:null}}
+function parseRoute(){
+  const h=(location.hash||'#/').replace(/^#/, '');
+  if(/^\/?login/.test(h)) return {view:'login',id:null};
+  if(/^\/?signup/.test(h)) return {view:'signup',id:null};
+  const m=h.match(/^\/?product\/(\d+)/);
+  return m?{view:'product',id:+m[1]}:{view:'home',id:null};
+}
 function goHome(){location.hash='#/'}
 function goProduct(id){location.hash=`#/product/${id}`}
+function goLogin(){location.hash='#/login'}
+function goSignup(){location.hash='#/signup'}
+
+function updateAccountUI(){
+  const btn=document.querySelector('#account-btn');
+  if(!btn)return;
+  if(authUser){btn.textContent=authUser.name||authUser.username;btn.dataset.mode='user'}
+  else if(isGuest()){btn.textContent='비회원';btn.dataset.mode='guest'}
+  else{btn.textContent='로그인';btn.dataset.mode='login'}
+}
+
+function renderLogin(){
+  const savedId=localStorage.getItem('unnine-saved-id')||'';
+  return `<div class="auth-shell">
+    <div class="auth-top">
+      <button type="button" class="auth-icon" data-auth-back aria-label="뒤로">‹</button>
+      <a href="#/" class="auth-brand" aria-label="홈"><img src="${LOGO}" alt="언니네닭"><span>언니네닭</span></a>
+      <button type="button" class="auth-icon" data-auth-home aria-label="홈">⌂</button>
+    </div>
+    <h1 class="auth-title">로그인</h1>
+    <p class="auth-lead">아이디와 비밀번호 입력하기 귀찮으시죠?<br>1초 만에 회원가입 하고 로그인 하세요</p>
+    <button type="button" class="btn-kakao" data-social="kakao"><span class="social-ico">💬</span> 카카오 1초 로그인/회원가입</button>
+    <button type="button" class="btn-naver" data-social="naver"><span class="social-ico">N</span> 네이버 1초 로그인/회원가입</button>
+    <div class="auth-or"><span>또는</span></div>
+    <form id="login-form" class="auth-form">
+      <input name="username" required maxlength="50" placeholder="아이디" value="${esc(savedId)}" autocomplete="username">
+      <label class="pw-wrap"><input name="password" type="password" required maxlength="100" placeholder="비밀번호" autocomplete="current-password"><button type="button" class="pw-toggle" aria-label="비밀번호 보기">👁</button></label>
+      <label class="save-id"><input type="checkbox" name="save_id" ${savedId?'checked':''}> 아이디 저장</label>
+      <button type="submit" class="btn-member">기존 회원 로그인</button>
+    </form>
+    <div class="auth-links">
+      <button type="button" class="linkish" data-soon="id">아이디 찾기</button>
+      <button type="button" class="linkish" data-soon="pw">비밀번호 찾기</button>
+      <button type="button" class="linkish signup-link" data-go-signup>회원가입</button>
+    </div>
+    <button type="button" class="btn-guest" data-guest>비회원 구매</button>
+    <p class="auth-msg" id="auth-msg" role="status"></p>
+  </div>`;
+}
+
+function renderSignup(){
+  return `<div class="auth-shell">
+    <div class="auth-top">
+      <button type="button" class="auth-icon" data-auth-back aria-label="뒤로">‹</button>
+      <a href="#/" class="auth-brand" aria-label="홈"><img src="${LOGO}" alt="언니네닭"><span>언니네닭</span></a>
+      <button type="button" class="auth-icon" data-auth-home aria-label="홈">⌂</button>
+    </div>
+    <h1 class="auth-title">회원가입</h1>
+    <p class="auth-lead">간단한 정보만 입력하면 바로 주문할 수 있어요.</p>
+    <form id="signup-form" class="auth-form">
+      <input name="username" required minlength="3" maxlength="50" placeholder="아이디 (영문·숫자)" autocomplete="username">
+      <input name="name" required maxlength="100" placeholder="이름" autocomplete="name">
+      <input name="phone" maxlength="30" placeholder="연락처 (선택)" autocomplete="tel">
+      <label class="pw-wrap"><input name="password" type="password" required minlength="4" maxlength="100" placeholder="비밀번호" autocomplete="new-password"><button type="button" class="pw-toggle" aria-label="비밀번호 보기">👁</button></label>
+      <label class="pw-wrap"><input name="password2" type="password" required minlength="4" maxlength="100" placeholder="비밀번호 확인" autocomplete="new-password"><button type="button" class="pw-toggle" aria-label="비밀번호 보기">👁</button></label>
+      <button type="submit" class="btn-member-primary">가입하고 로그인</button>
+    </form>
+    <button type="button" class="btn-guest" data-go-login>이미 회원이신가요? 로그인</button>
+    <p class="auth-msg" id="auth-msg" role="status"></p>
+  </div>`;
+}
 
 function optionSelect(p,selectedId){const list=opts(p);const sid=selectedId??list[0].id;if(list.length<=1)return `<p class="detail-option-one">${esc(list[0].label)}</p><input type="hidden" data-option-for="${p.id}" value="${list[0].id}">`;return `<label class="option-pick">옵션<select data-option-for="${p.id}" aria-label="${esc(p.name)} 옵션">${list.map(o=>`<option value="${o.id}" ${o.id===sid?'selected':''}>${esc(o.label)} · ${won(o.price)}</option>`).join('')}</select></label>`}
 function addonSelect(p,optionId){const list=addonsFor(p,optionId);if(!list.length)return '';return `<div class="addon-pick" data-addons-for="${p.id}"><p class="detail-label">추가옵션</p>${list.map(a=>`<label class="addon-check"><input type="checkbox" data-addon-id="${a.id}" value="${a.id}"> ${esc(a.label)} <span>+${won(a.price)}</span></label>`).join('')}</div>`}
@@ -62,10 +151,28 @@ function renderDetail(){
 function showView(){
   const route=parseRoute();
   detailId=route.view==='product'?route.id:null;
+  authView=route.view==='login'||route.view==='signup'?route.view:null;
   const home=document.querySelector('#home-view');
   const product=document.querySelector('#product-view');
-  if(detailId){home.hidden=true;product.hidden=false;renderDetail();window.scrollTo({top:0,behavior:'smooth'})}
-  else{home.hidden=false;product.hidden=true;renderGrid();updateCategoryHint()}
+  const auth=document.querySelector('#auth-view');
+  const storeHeader=document.querySelector('header .top #search');
+  const header=document.querySelector('header');
+  const footer=document.querySelector('footer');
+  if(authView){
+    home.hidden=true;product.hidden=true;auth.hidden=false;
+    header.classList.add('auth-mode');footer.classList.add('auth-mode');
+    auth.innerHTML=authView==='signup'?renderSignup():renderLogin();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }else if(detailId){
+    home.hidden=true;product.hidden=false;auth.hidden=true;
+    header.classList.remove('auth-mode');footer.classList.remove('auth-mode');
+    renderDetail();window.scrollTo({top:0,behavior:'smooth'});
+  }else{
+    home.hidden=false;product.hidden=true;auth.hidden=true;
+    header.classList.remove('auth-mode');footer.classList.remove('auth-mode');
+    renderGrid();updateCategoryHint();
+  }
+  void storeHeader;
 }
 
 function refreshDetailAddons(root){
@@ -77,19 +184,15 @@ function refreshDetailAddons(root){
   const fields=root.querySelector('.detail-fields');
   if(!html){box?.remove()}
   else if(box){box.outerHTML=html}
-  else{
-    const qty=fields.querySelector('.qty-pick');
-    qty.insertAdjacentHTML('beforebegin',html);
-  }
+  else{fields.querySelector('.qty-pick').insertAdjacentHTML('beforebegin',html)}
   box=root.querySelector('[data-addons-for]');
   prev.forEach(id=>{const el=box?.querySelector(`[data-addon-id="${id}"]`);if(el)el.checked=true});
   updateDetailPrice(root);
 }
 function updateDetailPrice(root){
   const p=products.find(x=>x.id===+root.dataset.productDetail);if(!p)return;
-  const optionId=currentOptionId(root,p);
   const el=root.querySelector('[data-price]');
-  if(el)el.textContent=won(lineUnit(p,optionId,selectedAddonIds(root)));
+  if(el)el.textContent=won(lineUnit(p,currentOptionId(root,p),selectedAddonIds(root)));
 }
 
 function cartRender(){let total=0;document.querySelector('#cart-lines').innerHTML=cart.map((line,index)=>{const p=products.find(p=>p.id===line.id);if(!p)return '';const o=pickOpt(p,line.optionId);const extras=pickAddons(p,line.optionId,line.addonIds);const unit=lineUnit(p,line.optionId,line.addonIds);total+=unit*line.quantity;const extraText=extras.length?`<br><span class="cart-addons">${extras.map(a=>esc(a.label)+' +'+won(a.price)).join(', ')}</span>`:'';return `<div class="line"><div>${esc(p.name)}<br><span>${esc(o.label)}</span>${extraText}<br><strong>${won(unit)}</strong></div><label>수량<input type="number" min="1" max="100" value="${line.quantity}" data-quantity-index="${index}"></label><button data-remove-index="${index}">삭제</button></div>`}).join('')||'<p>장바구니가 비어 있습니다.</p>';document.querySelector('#total').textContent='상품 합계 '+won(total);document.querySelector('#submit').disabled=!enabled||!cart.length;document.querySelector('#submit').textContent=enabled?'주문 접수':'주문 준비 중'}
@@ -99,6 +202,13 @@ function addToCart(p,optionId,addonIds,quantity){
   if(line)line.quantity=Math.min(100,line.quantity+quantity);
   else cart.push({id:p.id,optionId,addonIds,quantity});
   persist();
+}
+
+function afterAuthSuccess(){
+  updateAccountUI();
+  goHome();
+  cartRender();
+  document.querySelector('#cart').showModal();
 }
 
 document.querySelector('#grid').addEventListener('click',e=>{
@@ -120,10 +230,7 @@ document.querySelector('#product-view').addEventListener('click',e=>{
   if(!add)return;
   const root=e.target.closest('[data-product-detail]');
   const p=products.find(x=>x.id===+root.dataset.productDetail);if(!p)return;
-  const optionId=currentOptionId(root,p);
-  const addonIds=selectedAddonIds(root);
-  const qty=Math.max(1,Math.min(100,Math.trunc(+root.querySelector('[data-detail-qty]').value)||1));
-  addToCart(p,optionId,addonIds,qty);
+  addToCart(p,currentOptionId(root,p),selectedAddonIds(root),Math.max(1,Math.min(100,Math.trunc(+root.querySelector('[data-detail-qty]').value)||1)));
   const msg=root.querySelector('[data-detail-msg]');
   msg.hidden=false;msg.textContent='장바구니에 담았습니다.';
   add.textContent='담았어요';
@@ -135,29 +242,131 @@ document.querySelector('#product-view').addEventListener('change',e=>{
   if(e.target.closest('[data-addon-id]'))updateDetailPrice(root);
 });
 
+document.querySelector('#auth-view').addEventListener('click',async e=>{
+  if(e.target.closest('[data-auth-back]')||e.target.closest('[data-auth-home]')){goHome();return}
+  if(e.target.closest('[data-go-signup]')){goSignup();return}
+  if(e.target.closest('[data-go-login]')){goLogin();return}
+  if(e.target.closest('[data-guest]')){setGuest();updateAccountUI();afterAuthSuccess();return}
+  if(e.target.closest('[data-soon]')){const msg=document.querySelector('#auth-msg');if(msg)msg.textContent='준비 중인 기능입니다.';return}
+  const toggle=e.target.closest('.pw-toggle');
+  if(toggle){
+    const input=toggle.parentElement.querySelector('input');
+    input.type=input.type==='password'?'text':'password';
+    return;
+  }
+  const socialBtn=e.target.closest('[data-social]');
+  if(socialBtn){
+    const provider=socialBtn.dataset.social;
+    const msg=document.querySelector('#auth-msg');
+    try{
+      const data=await request(`/api/auth/social/${provider}/start`);
+      if(data.url) location.href=data.url;
+    }catch(error){
+      if(msg) msg.textContent=error.message;
+    }
+  }
+});
+
+document.querySelector('#auth-view').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const msg=document.querySelector('#auth-msg');
+  if(e.target.id==='login-form'){
+    const fd=new FormData(e.target);
+    const username=String(fd.get('username')||'').trim();
+    const password=String(fd.get('password')||'');
+    if(fd.get('save_id')) localStorage.setItem('unnine-saved-id',username);
+    else localStorage.removeItem('unnine-saved-id');
+    msg.textContent='로그인 중…';
+    try{
+      const data=await request('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+      saveAuth(data);
+      afterAuthSuccess();
+    }catch(error){msg.textContent=error.message}
+    return;
+  }
+  if(e.target.id==='signup-form'){
+    const fd=new FormData(e.target);
+    const password=String(fd.get('password')||'');
+    const password2=String(fd.get('password2')||'');
+    if(password!==password2){msg.textContent='비밀번호가 일치하지 않습니다.';return}
+    msg.textContent='가입 중…';
+    try{
+      const data=await request('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        username:String(fd.get('username')||'').trim(),
+        name:String(fd.get('name')||'').trim(),
+        phone:String(fd.get('phone')||'').trim(),
+        password,
+      })});
+      saveAuth(data);
+      afterAuthSuccess();
+    }catch(error){msg.textContent=error.message}
+  }
+});
+
 document.querySelector('#nav').addEventListener('click',e=>{
   const button=e.target.closest('[data-category]');if(!button)return;
   selected=+button.dataset.category;
-  if(detailId)goHome();
+  if(detailId||authView)goHome();
   else{renderGrid();document.querySelector('#catalog').scrollIntoView({behavior:'smooth'})}
 });
 document.querySelector('#search').onsubmit=e=>{
   e.preventDefault();
   search=e.target.querySelector('input').value.trim();
-  if(detailId)goHome();
+  if(detailId||authView)goHome();
   else{renderGrid();document.querySelector('#catalog').scrollIntoView({behavior:'smooth'})}
 };
-document.querySelector('#browse').onclick=()=>{if(detailId)goHome();document.querySelector('#catalog').scrollIntoView({behavior:'smooth'})};
+document.querySelector('#browse').onclick=()=>{if(detailId||authView)goHome();document.querySelector('#catalog').scrollIntoView({behavior:'smooth'})};
 document.querySelector('.logo').addEventListener('click',e=>{e.preventDefault();goHome()});
+
+document.querySelector('#account-btn').onclick=async ()=>{
+  const mode=document.querySelector('#account-btn').dataset.mode;
+  if(mode==='user'){
+    if(confirm('로그아웃 할까요?')){
+      try{await request('/api/auth/logout',{method:'POST'})}catch{}
+      clearAuth();
+    }
+    return;
+  }
+  goLogin();
+};
 
 document.querySelector('#cart-open').onclick=()=>{cartRender();document.querySelector('#cart').showModal()};
 document.querySelector('#cart-close').onclick=()=>document.querySelector('#cart').close();
 document.querySelector('#cart-lines').addEventListener('click',e=>{if(e.target.dataset.removeIndex==null)return;cart.splice(+e.target.dataset.removeIndex,1);persist();cartRender()});
 document.querySelector('#cart-lines').addEventListener('change',e=>{if(e.target.dataset.quantityIndex==null)return;const line=cart[+e.target.dataset.quantityIndex];if(!line)return;line.quantity=Math.max(1,Math.min(100,Math.trunc(+e.target.value)||1));persist();cartRender()});
-document.querySelector('#order').onsubmit=async e=>{e.preventDefault();const button=document.querySelector('#submit'),message=document.querySelector('#order-message');button.disabled=true;message.textContent='주문 접수 중…';try{const values=Object.fromEntries(new FormData(e.target));const result=await request('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...values,items:cart.map(x=>({product_id:x.id,option_id:x.optionId||undefined,quantity:x.quantity,addons:(x.addonIds||[]).map(id=>({addon_id:id,quantity:1}))}))})});cart=[];persist();cartRender();e.target.reset();message.textContent=`주문이 접수됐습니다. 번호 ${result.order_id} · 상품 합계 ${won(result.total)} · 결제 대기`;}catch(error){message.textContent=error.message;button.disabled=!enabled||!cart.length}};
+document.querySelector('#order').onsubmit=async e=>{
+  e.preventDefault();
+  if(!canCheckout()){
+    document.querySelector('#cart').close();
+    goLogin();
+    return;
+  }
+  const button=document.querySelector('#submit'),message=document.querySelector('#order-message');
+  button.disabled=true;message.textContent='주문 접수 중…';
+  try{
+    const values=Object.fromEntries(new FormData(e.target));
+    const result=await request('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...values,items:cart.map(x=>({product_id:x.id,option_id:x.optionId||undefined,quantity:x.quantity,addons:(x.addonIds||[]).map(id=>({addon_id:id,quantity:1}))}))})});
+    cart=[];persist();cartRender();e.target.reset();
+    message.textContent=`주문이 접수됐습니다. 번호 ${result.order_id} · 상품 합계 ${won(result.total)} · 결제 대기`;
+  }catch(error){message.textContent=error.message;button.disabled=!enabled||!cart.length}
+};
 
 function navButton(c){const img=c.image?`<img src="${esc(c.image)}" alt="" loading="lazy">`:'';return `<button type="button" class="cat" data-category="${c.id}">${img}<span>${esc(c.name)}</span></button>`}
-async function init(){try{if(!api)throw new Error('API 주소가 설정되지 않았습니다. VITE_API_URL을 설정해 주세요.');let allImage='';[categories,products,{orders_enabled:enabled,all_category_image:allImage}]=await Promise.all([request('/api/categories'),request('/api/products'),request('/api/config')]);cart=cart.map(x=>{const p=products.find(p=>p.id===x.id);if(!p)return null;const optionId=x.optionId??opts(p)[0].id;const addonIds=(x.addonIds||[]).filter(id=>addonsFor(p,optionId).some(a=>a.id===id));return {id:x.id,optionId,addonIds,quantity:x.quantity}}).filter(Boolean);document.querySelector('#nav').innerHTML=[{id:0,name:'전체상품',image:allImage},...categories].map(navButton).join('');persist();showView()}catch(error){document.querySelector('#error').textContent=error.message}}
+async function init(){
+  try{
+    if(!api)throw new Error('API 주소가 설정되지 않았습니다. VITE_API_URL을 설정해 주세요.');
+    let allImage='';
+    let cfg;
+    [categories,products,cfg]=await Promise.all([request('/api/categories'),request('/api/products'),request('/api/config')]);
+    enabled=cfg.orders_enabled;allImage=cfg.all_category_image||'';social=cfg.social||social;
+    if(getToken()){
+      try{authUser=await request('/api/auth/me')}catch{clearAuth()}
+    }
+    cart=cart.map(x=>{const p=products.find(p=>p.id===x.id);if(!p)return null;const optionId=x.optionId??opts(p)[0].id;const addonIds=(x.addonIds||[]).filter(id=>addonsFor(p,optionId).some(a=>a.id===id));return {id:x.id,optionId,addonIds,quantity:x.quantity}}).filter(Boolean);
+    document.querySelector('#nav').innerHTML=[{id:0,name:'전체상품',image:allImage},...categories].map(navButton).join('');
+    updateAccountUI();persist();showView();
+  }catch(error){document.querySelector('#error').textContent=error.message}
+}
 
 function updateCategoryHint(){const nav=document.querySelector('#nav'),wrap=document.querySelector('.category-nav-wrap');if(!nav||!wrap||document.querySelector('#home-view').hidden)return;const more=nav.scrollWidth-nav.clientWidth-nav.scrollLeft>8;wrap.classList.toggle('has-more',more)}
 document.querySelector('#nav')?.addEventListener('scroll',updateCategoryHint,{passive:true});

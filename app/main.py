@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Set, Union
+from urllib.parse import urlencode
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +13,8 @@ from pydantic import BaseModel, ConfigDict, Field, AliasChoices, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint, create_engine, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
+
+from .auth_util import hash_password, new_session_token, session_expiry, verify_password
 
 ALLOWED_IMAGE_TYPES = {
     'image/jpeg': '.jpg',
@@ -26,6 +29,11 @@ class Settings(BaseSettings):
     cors_origins: str = 'http://localhost:5173,http://127.0.0.1:5173'
     admin_api_key: str = ''
     orders_enabled: bool = False
+    kakao_rest_api_key: str = ''
+    kakao_redirect_uri: str = ''
+    naver_client_id: str = ''
+    naver_client_secret: str = ''
+    naver_redirect_uri: str = ''
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
 
 
@@ -94,9 +102,29 @@ class ProductAddonLink(Base):
     option_id: Mapped[int] = mapped_column(ForeignKey('product_options.id'), index=True)
 
 
+class User(Base):
+    __tablename__ = 'users'
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(200))
+    name: Mapped[str] = mapped_column(String(100), default='')
+    phone: Mapped[str] = mapped_column(String(30), default='')
+    provider: Mapped[str] = mapped_column(String(20), default='local')  # local|kakao|naver
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class AuthSession(Base):
+    __tablename__ = 'auth_sessions'
+    token: Mapped[str] = mapped_column(String(80), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 class Order(Base):
     __tablename__ = 'orders'
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey('users.id'), nullable=True, default=None)
     customer_name: Mapped[str] = mapped_column(String(100))
     phone: Mapped[str] = mapped_column(String(30))
     address: Mapped[str] = mapped_column(String(500))
@@ -233,9 +261,64 @@ class ProductCreateIn(ProductUpdateIn):
     pass
 
 
+class RegisterIn(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=4, max_length=100)
+    name: str = Field(min_length=1, max_length=100)
+    phone: str = Field(default='', max_length=30)
+
+    @field_validator('username')
+    @classmethod
+    def clean_username(cls, value: str) -> str:
+        value = value.strip()
+        if not value.isalnum():
+            raise ValueError('아이디는 영문·숫자만 사용할 수 있습니다.')
+        return value
+
+    @field_validator('name')
+    @classmethod
+    def clean_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError('이름을 입력해 주세요.')
+        return value
+
+
+class LoginIn(BaseModel):
+    username: str = Field(min_length=1, max_length=50)
+    password: str = Field(min_length=1, max_length=100)
+
+
 def require_admin(x_admin_key: str = Header(default='')):
     if not settings.admin_api_key or not secrets.compare_digest(x_admin_key, settings.admin_api_key):
         raise HTTPException(401, '인증이 필요합니다.')
+
+
+def get_user_optional(authorization: str = Header(default=''), session: Session = Depends(db)) -> Optional[User]:
+    if not authorization.lower().startswith('bearer '):
+        return None
+    token = authorization.split(' ', 1)[1].strip()
+    if not token:
+        return None
+    row = session.get(AuthSession, token)
+    if not row:
+        return None
+    expires = row.expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if expires < datetime.now(timezone.utc):
+        return None
+    return session.get(User, row.user_id)
+
+
+def create_login_session(session: Session, user: User) -> dict:
+    token = new_session_token()
+    session.add(AuthSession(token=token, user_id=user.id, expires_at=session_expiry()))
+    session.commit()
+    return {
+        'token': token,
+        'user': {'id': user.id, 'username': user.username, 'name': user.name, 'phone': user.phone or ''},
+    }
 
 
 def product_options(session: Session, product_id: int) -> List[ProductOption]:
@@ -441,7 +524,84 @@ def config():
     return {
         'orders_enabled': settings.orders_enabled,
         'all_category_image': catalog.get('all_category_image', ''),
+        'social': {
+            'kakao': bool(settings.kakao_rest_api_key and settings.kakao_redirect_uri),
+            'naver': bool(settings.naver_client_id and settings.naver_redirect_uri),
+        },
     }
+
+
+@app.post('/api/auth/register', status_code=201)
+def auth_register(data: RegisterIn, session: Session = Depends(db)):
+    exists = session.scalar(select(User).where(User.username == data.username))
+    if exists:
+        raise HTTPException(409, '이미 사용 중인 아이디입니다.')
+    user = User(
+        username=data.username,
+        password_hash=hash_password(data.password),
+        name=data.name,
+        phone=(data.phone or '').strip(),
+        provider='local',
+    )
+    session.add(user)
+    session.flush()
+    return create_login_session(session, user)
+
+
+@app.post('/api/auth/login')
+def auth_login(data: LoginIn, session: Session = Depends(db)):
+    user = session.scalar(select(User).where(User.username == data.username.strip()))
+    if not user or user.provider != 'local' or not verify_password(data.password, user.password_hash):
+        raise HTTPException(401, '아이디 또는 비밀번호를 확인해 주세요.')
+    return create_login_session(session, user)
+
+
+@app.get('/api/auth/me')
+def auth_me(user: Optional[User] = Depends(get_user_optional)):
+    if not user:
+        raise HTTPException(401, '로그인이 필요합니다.')
+    return {'id': user.id, 'username': user.username, 'name': user.name, 'phone': user.phone or ''}
+
+
+@app.post('/api/auth/logout')
+def auth_logout(authorization: str = Header(default=''), session: Session = Depends(db)):
+    if authorization.lower().startswith('bearer '):
+        token = authorization.split(' ', 1)[1].strip()
+        row = session.get(AuthSession, token)
+        if row:
+            session.delete(row)
+            session.commit()
+    return {'ok': True}
+
+
+@app.get('/api/auth/social/{provider}/start')
+def auth_social_start(provider: str):
+    provider = provider.lower()
+    if provider == 'kakao':
+        if not (settings.kakao_rest_api_key and settings.kakao_redirect_uri):
+            raise HTTPException(503, '카카오 로그인은 앱 키 설정 후 사용할 수 있습니다.')
+        query = urlencode(
+            {
+                'client_id': settings.kakao_rest_api_key,
+                'redirect_uri': settings.kakao_redirect_uri,
+                'response_type': 'code',
+            }
+        )
+        return {'url': f'https://kauth.kakao.com/oauth/authorize?{query}'}
+    if provider == 'naver':
+        if not (settings.naver_client_id and settings.naver_redirect_uri):
+            raise HTTPException(503, '네이버 로그인은 앱 키 설정 후 사용할 수 있습니다.')
+        state = secrets.token_urlsafe(16)
+        query = urlencode(
+            {
+                'response_type': 'code',
+                'client_id': settings.naver_client_id,
+                'redirect_uri': settings.naver_redirect_uri,
+                'state': state,
+            }
+        )
+        return {'url': f'https://nid.naver.com/oauth2.0/authorize?{query}', 'state': state}
+    raise HTTPException(404, '지원하지 않는 로그인입니다.')
 
 
 @app.get('/api/products', response_model=List[ProductOut])
@@ -464,7 +624,7 @@ def product(product_id: int, session: Session = Depends(db)):
 
 
 @app.post('/api/orders', status_code=201)
-def order(data: OrderIn, session: Session = Depends(db)):
+def order(data: OrderIn, session: Session = Depends(db), user: Optional[User] = Depends(get_user_optional)):
     if not settings.orders_enabled:
         raise HTTPException(503, '현재 주문 접수가 준비 중입니다.')
 
@@ -507,6 +667,7 @@ def order(data: OrderIn, session: Session = Depends(db)):
 
     receipt = Order(
         id=secrets.token_urlsafe(24),
+        user_id=user.id if user else None,
         customer_name=data.customer_name.strip(),
         phone=data.phone,
         address=data.address.strip(),
