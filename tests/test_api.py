@@ -250,3 +250,57 @@ def test_my_orders_and_lookup():
     assert looked.status_code == 200
     assert looked.json()['id'] == order_id
     assert client.post('/api/orders/lookup', json={'order_id': order_id, 'phone': '01000000000'}).status_code == 404
+
+
+def test_user_addresses():
+    login = client.post('/api/auth/login', json={'username': 'buyer01', 'password': 'pass1234'})
+    headers = {'Authorization': f'Bearer {login.json()["token"]}'}
+    assert client.get('/api/my/addresses').status_code == 401
+    created = client.post(
+        '/api/my/addresses',
+        headers=headers,
+        json={
+            'label': '집',
+            'recipient_name': '홍길동',
+            'phone': '01011112222',
+            'address': '서울시 강남구 테스트로 1',
+            'is_default': True,
+        },
+    )
+    assert created.status_code == 201
+    home_id = created.json()['id']
+    assert created.json()['is_default'] is True
+    office = client.post(
+        '/api/my/addresses',
+        headers=headers,
+        json={
+            'label': '회사',
+            'recipient_name': '홍길동',
+            'phone': '01033334444',
+            'address': '서울시 중구 회사로 2',
+            'is_default': True,
+        },
+    )
+    assert office.status_code == 201
+    office_id = office.json()['id']
+    listed = client.get('/api/my/addresses', headers=headers).json()
+    assert len(listed) >= 2
+    assert next(a for a in listed if a['id'] == office_id)['is_default'] is True
+    assert next(a for a in listed if a['id'] == home_id)['is_default'] is False
+    updated = client.put(
+        f'/api/my/addresses/{home_id}',
+        headers=headers,
+        json={
+            'label': '우리집',
+            'recipient_name': '홍길동',
+            'phone': '01011112222',
+            'address': '서울시 강남구 테스트로 1-2',
+            'is_default': False,
+        },
+    )
+    assert updated.status_code == 200 and updated.json()['label'] == '우리집'
+    assert client.post(f'/api/my/addresses/{home_id}/default', headers=headers).status_code == 200
+    listed2 = client.get('/api/my/addresses', headers=headers).json()
+    assert next(a for a in listed2 if a['id'] == home_id)['is_default'] is True
+    assert client.delete(f'/api/my/addresses/{office_id}', headers=headers).status_code == 200
+    assert all(a['id'] != office_id for a in client.get('/api/my/addresses', headers=headers).json())

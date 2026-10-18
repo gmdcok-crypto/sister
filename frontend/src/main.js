@@ -4,7 +4,7 @@ const won=n=>n.toLocaleString('ko-KR')+'원';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const AUTH_KEY='unnine-auth';
 const GUEST_KEY='unnine-guest';
-let products=[], categories=[], selected=0, search='', enabled=false, detailId=null, authView=null, mypageView=false, authUser=null, social={kakao:false,naver:false}, myOrders=[], lookupOrder=null;
+let products=[], categories=[], selected=0, search='', enabled=false, detailId=null, authView=null, mypageView=false, authUser=null, social={kakao:false,naver:false}, myOrders=[], lookupOrder=null, savedAddresses=[], selectedAddressId=null, addressFormMode='list', editingAddressId=null;
 let cart=[]; try {cart=JSON.parse(localStorage.getItem('unnine-cart')||'[]').filter(x=>Number.isInteger(x.id)&&Number.isInteger(x.quantity)&&x.quantity>0&&x.quantity<=100)}catch{}
 
 function getToken(){try{return JSON.parse(localStorage.getItem(AUTH_KEY)||'null')?.token||''}catch{return ''}}
@@ -39,7 +39,7 @@ document.querySelector('#app').innerHTML=`<header><div class="top"><a href="#/" 
 <section id="product-view" class="product-view" hidden></section>
 <section id="auth-view" class="auth-view" hidden></section>
 <section id="mypage-view" class="mypage-view" hidden></section>
-</main><footer>언니네닭 <p>상품·가격은 제공된 캡처를 바탕으로 등록한 초기 자료입니다. 상품 사진은 AI로 제작한 연출 이미지입니다.</p></footer><dialog id="cart"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><label>배송 주소<input name="address" required minlength="5" maxlength="500" autocomplete="street-address"></label><p>결제·배송비 연동 전입니다. 현재 기능은 결제 대기 상태의 주문 접수입니다.</p><button id="submit" type="submit">주문 접수</button><p id="order-message" role="status"></p></form></dialog>`;
+</main><footer>언니네닭 <p>상품·가격은 제공된 캡처를 바탕으로 등록한 초기 자료입니다. 상품 사진은 AI로 제작한 연출 이미지입니다.</p></footer><dialog id="cart"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><div id="address-book" class="address-book" hidden></div><div id="address-fields" class="address-fields"><label class="addr-label-field" hidden>배송지명<input name="label" maxlength="40" placeholder="예: 집, 회사" autocomplete="off"></label><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><label>배송 주소<input name="address" required minlength="5" maxlength="500" autocomplete="street-address"></label><label class="check-row" id="save-address-wrap" hidden><input type="checkbox" id="save-address"> 이 배송지를 주소록에 저장</label></div><p>결제·배송비 연동 전입니다. 현재 기능은 결제 대기 상태의 주문 접수입니다.</p><button id="submit" type="submit">주문 접수</button><p id="order-message" role="status"></p></form></dialog>`;
 
 function persist(){localStorage.setItem('unnine-cart',JSON.stringify(cart));document.querySelector('#count').textContent=cart.reduce((n,x)=>n+x.quantity,0)}
 function parseRoute(){
@@ -182,10 +182,125 @@ function orderHistoryCard(o){
   </article>`;
 }
 
+async function loadAddresses(){
+  if(!getToken()){savedAddresses=[];selectedAddressId=null;return}
+  try{savedAddresses=await request('/api/my/addresses')}catch{savedAddresses=[]}
+  if(selectedAddressId!=='new'&&!savedAddresses.some(a=>a.id===selectedAddressId)){
+    const def=savedAddresses.find(a=>a.is_default)||savedAddresses[0];
+    selectedAddressId=def?def.id:(savedAddresses.length?null:'new');
+  }
+}
+
+function fillOrderAddress(a){
+  const form=document.querySelector('#order');
+  if(!form)return;
+  form.customer_name.value=a?.recipient_name||authUser?.name||'';
+  form.phone.value=a?.phone||authUser?.phone||'';
+  form.address.value=a?.address||'';
+  if(form.label) form.label.value=a?.label||'';
+}
+
+function setAddressFieldsLocked(locked){
+  const fields=document.querySelector('#address-fields');
+  if(!fields)return;
+  fields.classList.toggle('is-locked',!!locked);
+  fields.querySelectorAll('input:not([type=checkbox])').forEach(el=>{
+    if(el.name==='label'){el.disabled=!!locked;return}
+    el.readOnly=!!locked;
+  });
+}
+
+function renderAddressBook(){
+  const box=document.querySelector('#address-book');
+  const labelField=document.querySelector('.addr-label-field');
+  const saveWrap=document.querySelector('#save-address-wrap');
+  if(!box)return;
+  const loggedIn=!!getToken();
+  if(!loggedIn){
+    box.hidden=true;box.innerHTML='';
+    if(labelField)labelField.hidden=true;
+    if(saveWrap)saveWrap.hidden=true;
+    setAddressFieldsLocked(false);
+    return;
+  }
+  box.hidden=false;
+  const cards=savedAddresses.map(a=>{
+    const on=selectedAddressId===a.id;
+    return `<label class="addr-card${on?' is-selected':''}">
+      <input type="radio" name="address_pick" value="${a.id}" ${on?'checked':''}>
+      <span class="addr-card-body">
+        <span class="addr-card-top"><strong>${esc(a.label||'배송지')}</strong>${a.is_default?'<em>기본</em>':''}</span>
+        <span>${esc(a.recipient_name)} · ${esc(a.phone)}</span>
+        <span class="addr-card-line">${esc(a.address)}</span>
+      </span>
+    </label>`;
+  }).join('');
+  const isNew=selectedAddressId==='new'||!savedAddresses.length;
+  box.innerHTML=`
+    <div class="addr-book-head">
+      <p>등록된 배송지에서 선택하거나 새 주소를 입력하세요.</p>
+      <button type="button" class="account-btn" data-addr-new>+ 새 배송지</button>
+    </div>
+    <div class="addr-card-list">${cards||'<p class="muted">저장된 배송지가 없습니다. 아래에서 추가해 주세요.</p>'}</div>
+    ${savedAddresses.length?`<label class="addr-card${isNew?' is-selected':''}"><input type="radio" name="address_pick" value="new" ${isNew?'checked':''}><span class="addr-card-body"><strong>새 배송지 입력</strong><span class="muted">받는 분·연락처·주소를 직접 입력합니다.</span></span></label>`:''}
+  `;
+  if(labelField)labelField.hidden=!isNew;
+  if(saveWrap){
+    saveWrap.hidden=!isNew;
+    const cb=document.querySelector('#save-address');
+    if(cb&&isNew&&!savedAddresses.length)cb.checked=true;
+  }
+  if(isNew){
+    setAddressFieldsLocked(false);
+    if(selectedAddressId!=='new'&&!savedAddresses.length){
+      fillOrderAddress({recipient_name:authUser?.name||'',phone:authUser?.phone||'',address:'',label:''});
+    }
+  }else{
+    const picked=savedAddresses.find(a=>a.id===selectedAddressId);
+    if(picked)fillOrderAddress(picked);
+    setAddressFieldsLocked(true);
+  }
+}
+
+function addressManageCard(a){
+  return `<article class="addr-manage-card${a.is_default?' is-default':''}" data-addr-id="${a.id}">
+    <div class="addr-manage-top">
+      <div>
+        <strong>${esc(a.label||'배송지')}</strong>
+        ${a.is_default?'<em class="addr-default-badge">기본 배송지</em>':''}
+      </div>
+      <div class="addr-manage-actions">
+        ${a.is_default?'':`<button type="button" class="account-btn" data-addr-default="${a.id}">기본으로</button>`}
+        <button type="button" class="account-btn" data-addr-edit="${a.id}">수정</button>
+        <button type="button" class="account-btn" data-addr-delete="${a.id}">삭제</button>
+      </div>
+    </div>
+    <p>${esc(a.recipient_name)} · ${esc(a.phone)}</p>
+    <p class="addr-card-line">${esc(a.address)}</p>
+  </article>`;
+}
+
+function addressEditorHtml(a){
+  return `<form id="addr-edit-form" class="addr-edit-form" data-edit-id="${a?.id||''}">
+    <h3>${a?'배송지 수정':'새 배송지 등록'}</h3>
+    <label>배송지명<input name="label" required maxlength="40" value="${esc(a?.label||'')}" placeholder="예: 집, 회사"></label>
+    <label>받는 분<input name="recipient_name" required maxlength="100" value="${esc(a?.recipient_name||authUser?.name||'')}"></label>
+    <label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" value="${esc(a?.phone||authUser?.phone||'')}"></label>
+    <label>배송 주소<input name="address" required minlength="5" maxlength="500" value="${esc(a?.address||'')}"></label>
+    <label class="check-row"><input type="checkbox" name="is_default" ${!a||a.is_default?'checked':''}> 기본 배송지로 설정</label>
+    <div class="addr-edit-actions">
+      <button type="submit">${a?'저장':'등록'}</button>
+      <button type="button" class="account-btn" data-addr-cancel>취소</button>
+    </div>
+    <p class="auth-msg" id="addr-edit-msg" role="status"></p>
+  </form>`;
+}
+
 function renderMypage(){
   const view=document.querySelector('#mypage-view');
   const loggedIn=!!authUser;
   const list=lookupOrder?[lookupOrder]:myOrders;
+  const editing=addressFormMode==='edit'?savedAddresses.find(a=>a.id===editingAddressId):null;
   view.innerHTML=`<div class="mypage">
     <div class="mypage-top">
       <button type="button" class="detail-back" data-back-home>← 쇼핑 계속하기</button>
@@ -193,7 +308,20 @@ function renderMypage(){
     </div>
     <h1>주문·결제 내역</h1>
     <p class="mypage-lead">${loggedIn?`${esc(authUser.name||authUser.username)}님의 주문과 결제 진행 상태입니다.`:'로그인하면 내 주문을 한눈에 볼 수 있습니다. 비회원은 주문번호로 조회하세요.'}</p>
-    ${loggedIn?'':`
+    ${loggedIn?`
+      <section class="addr-manage">
+        <div class="addr-manage-head">
+          <h2>배송지 관리</h2>
+          ${addressFormMode==='new'||addressFormMode==='edit'?'':`<button type="button" class="account-btn" data-addr-add>+ 배송지 추가</button>`}
+        </div>
+        <p class="muted">여러 배송지를 등록하고, 주문 시 선택해 사용할 수 있습니다. (최대 10개)</p>
+        ${addressFormMode==='new'||addressFormMode==='edit'?addressEditorHtml(editing):`
+          <div class="addr-manage-list">
+            ${savedAddresses.length?savedAddresses.map(addressManageCard).join(''):`<p class="mypage-empty-inline">등록된 배송지가 없습니다. 자주 쓰는 주소를 추가해 두세요.</p>`}
+          </div>
+        `}
+      </section>
+    `:`
       <div class="mypage-actions">
         <button type="button" data-go-login>로그인하고 내 주문 보기</button>
         <button type="button" class="account-btn" data-go-signup>회원가입</button>
@@ -206,6 +334,7 @@ function renderMypage(){
         <p class="auth-msg" id="lookup-msg" role="status"></p>
       </form>
     `}
+    <h2 class="mypage-section-title">주문 내역</h2>
     <div class="my-order-list" id="my-order-list">
       ${list.length?list.map(orderHistoryCard).join(''):`<section class="empty-orders mypage-empty">
         <h2>${loggedIn?'주문 내역이 없습니다':'조회된 주문이 없습니다'}</h2>
@@ -239,7 +368,10 @@ function showView(){
   }else if(mypageView){
     home.hidden=true;product.hidden=true;auth.hidden=true;mypage.hidden=false;
     header.classList.remove('auth-mode');footer.classList.remove('auth-mode');
-    loadMyOrders().then(()=>{renderMypage();window.scrollTo({top:0,behavior:'smooth'})});
+    Promise.all([loadMyOrders(),loadAddresses()]).then(()=>{
+      addressFormMode='list';editingAddressId=null;
+      renderMypage();window.scrollTo({top:0,behavior:'smooth'});
+    });
   }else if(detailId){
     home.hidden=true;product.hidden=false;auth.hidden=true;mypage.hidden=true;
     header.classList.remove('auth-mode');footer.classList.remove('auth-mode');
@@ -283,8 +415,7 @@ function addToCart(p,optionId,addonIds,quantity){
 function afterAuthSuccess(){
   updateAccountUI();
   goHome();
-  cartRender();
-  document.querySelector('#cart').showModal();
+  openCart();
 }
 
 document.querySelector('#grid').addEventListener('click',e=>{
@@ -407,10 +538,64 @@ document.querySelector('#mypage-view').addEventListener('click',async e=>{
   if(e.target.closest('[data-go-signup]')){goSignup();return}
   if(e.target.closest('[data-logout]')){
     try{await request('/api/auth/logout',{method:'POST'})}catch{}
-    clearAuth();lookupOrder=null;myOrders=[];renderMypage();
+    clearAuth();lookupOrder=null;myOrders=[];savedAddresses=[];selectedAddressId=null;addressFormMode='list';editingAddressId=null;renderMypage();
+    return;
+  }
+  if(e.target.closest('[data-addr-add]')){
+    if(savedAddresses.length>=10){alert('배송지는 최대 10개까지 등록할 수 있습니다.');return}
+    addressFormMode='new';editingAddressId=null;renderMypage();return;
+  }
+  if(e.target.closest('[data-addr-cancel]')){
+    addressFormMode='list';editingAddressId=null;renderMypage();return;
+  }
+  const editBtn=e.target.closest('[data-addr-edit]');
+  if(editBtn){
+    addressFormMode='edit';editingAddressId=+editBtn.dataset.addrEdit;renderMypage();return;
+  }
+  const defBtn=e.target.closest('[data-addr-default]');
+  if(defBtn){
+    try{
+      await request(`/api/my/addresses/${defBtn.dataset.addrDefault}/default`,{method:'POST'});
+      await loadAddresses();
+      addressFormMode='list';renderMypage();
+    }catch(error){alert(error.message)}
+    return;
+  }
+  const delBtn=e.target.closest('[data-addr-delete]');
+  if(delBtn){
+    if(!confirm('이 배송지를 삭제할까요?'))return;
+    try{
+      await request(`/api/my/addresses/${delBtn.dataset.addrDelete}`,{method:'DELETE'});
+      await loadAddresses();
+      addressFormMode='list';editingAddressId=null;renderMypage();
+    }catch(error){alert(error.message)}
   }
 });
 document.querySelector('#mypage-view').addEventListener('submit',async e=>{
+  if(e.target.id==='addr-edit-form'){
+    e.preventDefault();
+    const msg=document.querySelector('#addr-edit-msg');
+    const fd=new FormData(e.target);
+    const body={
+      label:String(fd.get('label')||'').trim()||'기본',
+      recipient_name:String(fd.get('recipient_name')||'').trim(),
+      phone:String(fd.get('phone')||'').trim(),
+      address:String(fd.get('address')||'').trim(),
+      is_default:fd.get('is_default')==='on',
+    };
+    const editId=e.target.dataset.editId;
+    msg.textContent='저장 중…';
+    try{
+      if(editId){
+        await request(`/api/my/addresses/${editId}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      }else{
+        await request('/api/my/addresses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      }
+      await loadAddresses();
+      addressFormMode='list';editingAddressId=null;renderMypage();
+    }catch(error){msg.textContent=error.message}
+    return;
+  }
   if(e.target.id!=='lookup-form')return;
   e.preventDefault();
   const msg=document.querySelector('#lookup-msg');
@@ -429,10 +614,37 @@ document.querySelector('#mypage-view').addEventListener('submit',async e=>{
   }
 });
 
-document.querySelector('#cart-open').onclick=()=>{cartRender();document.querySelector('#cart').showModal()};
+async function openCart(){
+  cartRender();
+  if(getToken()){
+    await loadAddresses();
+    if(selectedAddressId==null){
+      const def=savedAddresses.find(a=>a.is_default)||savedAddresses[0];
+      selectedAddressId=def?def.id:'new';
+    }
+    renderAddressBook();
+  }else{
+    renderAddressBook();
+  }
+  document.querySelector('#cart').showModal();
+}
+document.querySelector('#cart-open').onclick=()=>{openCart()};
 document.querySelector('#cart-close').onclick=()=>document.querySelector('#cart').close();
 document.querySelector('#cart-lines').addEventListener('click',e=>{if(e.target.dataset.removeIndex==null)return;cart.splice(+e.target.dataset.removeIndex,1);persist();cartRender()});
 document.querySelector('#cart-lines').addEventListener('change',e=>{if(e.target.dataset.quantityIndex==null)return;const line=cart[+e.target.dataset.quantityIndex];if(!line)return;line.quantity=Math.max(1,Math.min(100,Math.trunc(+e.target.value)||1));persist();cartRender()});
+document.querySelector('#order').addEventListener('change',e=>{
+  if(e.target.name!=='address_pick')return;
+  selectedAddressId=e.target.value==='new'?'new':+e.target.value;
+  renderAddressBook();
+});
+document.querySelector('#order').addEventListener('click',e=>{
+  if(!e.target.closest('[data-addr-new]'))return;
+  selectedAddressId='new';
+  fillOrderAddress({recipient_name:authUser?.name||'',phone:authUser?.phone||'',address:'',label:''});
+  const cb=document.querySelector('#save-address');
+  if(cb)cb.checked=true;
+  renderAddressBook();
+});
 document.querySelector('#order').onsubmit=async e=>{
   e.preventDefault();
   if(!canCheckout()){
@@ -443,9 +655,24 @@ document.querySelector('#order').onsubmit=async e=>{
   const button=document.querySelector('#submit'),message=document.querySelector('#order-message');
   button.disabled=true;message.textContent='주문 접수 중…';
   try{
-    const values=Object.fromEntries(new FormData(e.target));
-    const result=await request('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...values,items:cart.map(x=>({product_id:x.id,option_id:x.optionId||undefined,quantity:x.quantity,addons:(x.addonIds||[]).map(id=>({addon_id:id,quantity:1}))}))})});
+    const fd=new FormData(e.target);
+    const customer_name=String(fd.get('customer_name')||'').trim();
+    const phone=String(fd.get('phone')||'').trim();
+    const address=String(fd.get('address')||'').trim();
+    const label=String(fd.get('label')||'').trim()||'기본';
+    const saveAddr=!!document.querySelector('#save-address')?.checked&&getToken()&&(selectedAddressId==='new'||!savedAddresses.length);
+    if(saveAddr){
+      await request('/api/my/addresses',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({label,recipient_name:customer_name,phone,address,is_default:!savedAddresses.length}),
+      });
+      await loadAddresses();
+    }
+    const result=await request('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customer_name,phone,address,items:cart.map(x=>({product_id:x.id,option_id:x.optionId||undefined,quantity:x.quantity,addons:(x.addonIds||[]).map(id=>({addon_id:id,quantity:1}))}))})});
     cart=[];persist();cartRender();e.target.reset();
+    selectedAddressId=null;
+    renderAddressBook();
     localStorage.setItem('unnine-last-order',result.order_id);
     message.textContent=`주문이 접수됐습니다. 번호 ${result.order_id} · 상품 합계 ${won(result.total)} · 결제 대기`;
     message.innerHTML+=` <button type="button" class="linkish" id="goto-mypage">내역 보기</button>`;

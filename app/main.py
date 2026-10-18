@@ -123,6 +123,18 @@ class AuthSession(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class UserAddress(Base):
+    __tablename__ = 'user_addresses'
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), index=True)
+    label: Mapped[str] = mapped_column(String(40), default='기본')
+    recipient_name: Mapped[str] = mapped_column(String(100))
+    phone: Mapped[str] = mapped_column(String(30))
+    address: Mapped[str] = mapped_column(String(500))
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 class Order(Base):
     __tablename__ = 'orders'
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
@@ -299,6 +311,25 @@ class RegisterIn(BaseModel):
 class LoginIn(BaseModel):
     username: str = Field(min_length=1, max_length=50)
     password: str = Field(min_length=1, max_length=100)
+
+
+class AddressIn(BaseModel):
+    label: str = Field(default='기본', min_length=1, max_length=40)
+    recipient_name: str = Field(min_length=1, max_length=100)
+    phone: str = Field(pattern=r'^0[0-9-]{8,19}$')
+    address: str = Field(min_length=5, max_length=500)
+    is_default: bool = False
+
+    @field_validator('label', 'recipient_name', 'address')
+    @classmethod
+    def strip_address_fields(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError('배송지 정보를 확인해 주세요.')
+        return value
+
+
+MAX_USER_ADDRESSES = 10
 
 
 def require_admin(x_admin_key: str = Header(default='')):
@@ -593,6 +624,123 @@ def auth_logout(authorization: str = Header(default=''), session: Session = Depe
         if row:
             session.delete(row)
             session.commit()
+    return {'ok': True}
+
+
+def serialize_address(row: UserAddress) -> dict:
+    return {
+        'id': row.id,
+        'label': row.label,
+        'recipient_name': row.recipient_name,
+        'phone': row.phone,
+        'address': row.address,
+        'is_default': bool(row.is_default),
+    }
+
+
+def user_addresses(session: Session, user_id: int) -> List[UserAddress]:
+    return list(
+        session.scalars(
+            select(UserAddress)
+            .where(UserAddress.user_id == user_id)
+            .order_by(UserAddress.is_default.desc(), UserAddress.id.desc())
+        )
+    )
+
+
+def clear_default_addresses(session: Session, user_id: int, except_id: Optional[int] = None):
+    rows = user_addresses(session, user_id)
+    for row in rows:
+        if except_id is not None and row.id == except_id:
+            continue
+        if row.is_default:
+            row.is_default = False
+
+
+def get_user_address(session: Session, user: User, address_id: int) -> UserAddress:
+    row = session.get(UserAddress, address_id)
+    if not row or row.user_id != user.id:
+        raise HTTPException(404, '배송지를 찾을 수 없습니다.')
+    return row
+
+
+@app.get('/api/my/addresses')
+def list_my_addresses(user: User = Depends(require_user), session: Session = Depends(db)):
+    return [serialize_address(row) for row in user_addresses(session, user.id)]
+
+
+@app.post('/api/my/addresses', status_code=201)
+def create_my_address(data: AddressIn, user: User = Depends(require_user), session: Session = Depends(db)):
+    existing = user_addresses(session, user.id)
+    if len(existing) >= MAX_USER_ADDRESSES:
+        raise HTTPException(422, f'배송지는 최대 {MAX_USER_ADDRESSES}개까지 등록할 수 있습니다.')
+    make_default = data.is_default or not existing
+    if make_default:
+        clear_default_addresses(session, user.id)
+    row = UserAddress(
+        user_id=user.id,
+        label=data.label,
+        recipient_name=data.recipient_name,
+        phone=data.phone,
+        address=data.address,
+        is_default=make_default,
+    )
+    session.add(row)
+    session.commit()
+    session.refresh(row)
+    return serialize_address(row)
+
+
+@app.put('/api/my/addresses/{address_id}')
+def update_my_address(
+    address_id: int,
+    data: AddressIn,
+    user: User = Depends(require_user),
+    session: Session = Depends(db),
+):
+    row = get_user_address(session, user, address_id)
+    row.label = data.label
+    row.recipient_name = data.recipient_name
+    row.phone = data.phone
+    row.address = data.address
+    if data.is_default:
+        clear_default_addresses(session, user.id, except_id=row.id)
+        row.is_default = True
+    elif row.is_default and not data.is_default:
+        # Keep at least one default when unchecking is not allowed if it's the only address
+        others = [a for a in user_addresses(session, user.id) if a.id != row.id]
+        if others:
+            row.is_default = False
+            if not any(a.is_default for a in others):
+                others[0].is_default = True
+        else:
+            row.is_default = True
+    session.commit()
+    session.refresh(row)
+    return serialize_address(row)
+
+
+@app.post('/api/my/addresses/{address_id}/default')
+def set_default_my_address(address_id: int, user: User = Depends(require_user), session: Session = Depends(db)):
+    row = get_user_address(session, user, address_id)
+    clear_default_addresses(session, user.id, except_id=row.id)
+    row.is_default = True
+    session.commit()
+    session.refresh(row)
+    return serialize_address(row)
+
+
+@app.delete('/api/my/addresses/{address_id}')
+def delete_my_address(address_id: int, user: User = Depends(require_user), session: Session = Depends(db)):
+    row = get_user_address(session, user, address_id)
+    was_default = row.is_default
+    session.delete(row)
+    session.flush()
+    if was_default:
+        remaining = user_addresses(session, user.id)
+        if remaining:
+            remaining[0].is_default = True
+    session.commit()
     return {'ok': True}
 
 
