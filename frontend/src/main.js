@@ -35,7 +35,7 @@ async function request(path,options={}){
 const LOGO='https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/unnine-logo-transparent.webp?v=1';
 
 document.querySelector('#app').innerHTML=`<header><div class="top"><a href="#/" class="logo" aria-label="언니네닭 홈"><img src="${LOGO}" alt="언니네닭"></a><form id="search"><input aria-label="상품 검색" placeholder="어떤 상품을 찾으세요?"><button>검색</button></form><button type="button" id="orders-btn" class="account-btn">주문내역</button><button type="button" id="account-btn" class="account-btn">로그인</button><button id="cart-open">장바구니 <span id="count">0</span></button></div></header><main>
-<section id="home-view"><section class="hero"><div><p class="accent">우리 집 식탁을 위한 장보기</p><h1>맛있는 선택,<br>언니네닭에서.</h1><p>닭고기부터 다양한 육류까지.<br>필요한 상품을 편리하게 만나보세요.</p><button id="browse">상품 둘러보기</button></div><div class="hero-media" aria-roledescription="carousel" aria-label="추천 상품 이미지"><div class="hero-slides"><img class="hero-slide is-active" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-products.webp?v=4" alt="닭고기 모음" decoding="async"><img class="hero-slide" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-beef-pork.webp?v=1" alt="소고기·돼지고기 모음" decoding="async"><img class="hero-slide" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-roast-chicken-duck.webp?v=1" alt="로스팅 치킨·오리 모음" decoding="async"></div><div class="hero-dots" role="tablist" aria-label="슬라이드"><button type="button" class="hero-dot is-active" aria-label="1번째 이미지" data-hero="0"></button><button type="button" class="hero-dot" aria-label="2번째 이미지" data-hero="1"></button><button type="button" class="hero-dot" aria-label="3번째 이미지" data-hero="2"></button></div></div></section><div class="category-nav-wrap"><nav id="nav" class="category-nav" aria-label="상품 카테고리"></nav><span class="category-nav-hint" aria-hidden="true">›</span></div><section id="catalog"><div class="title"><h2 id="title">전체상품</h2><span id="results" aria-live="polite"></span></div><p id="error" role="alert"></p><div id="grid" class="grid"></div></section></section>
+<section id="home-view"><section class="hero" aria-label="메인 소개"><img class="hero-bg" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-beef-pork.webp?v=1" alt="" decoding="async"><div class="hero-copy"><p class="accent">우리 집 식탁을 위한 장보기</p><h1>맛있는 선택,<br>언니네닭에서.</h1><p>닭고기부터 다양한 육류까지. 필요한 상품을 편리하게 만나보세요.</p><button id="browse">상품 둘러보기</button></div></section><div class="category-nav-wrap"><nav id="nav" class="category-nav" aria-label="상품 카테고리"></nav><span class="category-nav-hint" aria-hidden="true">›</span></div><section id="catalog"><div class="title"><h2 id="title">전체상품</h2><span id="results" aria-live="polite"></span></div><p id="error" role="alert"></p><div id="grid" class="grid"></div></section></section>
 <section id="product-view" class="product-view" hidden></section>
 <section id="auth-view" class="auth-view" hidden></section>
 <section id="mypage-view" class="mypage-view" hidden></section>
@@ -474,25 +474,5 @@ function updateCategoryHint(){const nav=document.querySelector('#nav'),wrap=docu
 document.querySelector('#nav')?.addEventListener('scroll',updateCategoryHint,{passive:true});
 window.addEventListener('resize',updateCategoryHint);
 window.addEventListener('hashchange',showView);
-
-(function(){
-  const slides=[...document.querySelectorAll('.hero-slide')];
-  const dots=[...document.querySelectorAll('.hero-dot')];
-  if(slides.length<2) return;
-  let i=0, timer;
-  function show(n){
-    i=(n+slides.length)%slides.length;
-    slides.forEach((el,idx)=>el.classList.toggle('is-active',idx===i));
-    dots.forEach((el,idx)=>{el.classList.toggle('is-active',idx===i);el.setAttribute('aria-selected',idx===i?'true':'false')});
-  }
-  function next(){show(i+1)}
-  function start(){timer=setInterval(next,4500)}
-  function stop(){clearInterval(timer)}
-  dots.forEach(btn=>btn.addEventListener('click',()=>{stop();show(+btn.dataset.hero);start()}));
-  const media=document.querySelector('.hero-media');
-  media?.addEventListener('mouseenter',stop);
-  media?.addEventListener('mouseleave',start);
-  start();
-})();
 
 persist();init();
