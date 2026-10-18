@@ -1,0 +1,32 @@
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 "Malgun Gothic",sans-serif;color:#262626;background:#f7f3ef}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer;border:0;border-radius:10px;padding:10px 16px;background:#ff633e;color:#fff}
+button.secondary{background:#fff;color:#333;border:1px solid #ddd}
+button.danger{background:#fff;color:#b42318;border:1px solid #f0c7c2}
+button:disabled{opacity:.55;cursor:not-allowed}
+input,select,textarea{width:100%;border:1px solid #ddd;border-radius:10px;padding:10px;background:#fff}
+.wrap{max-width:1100px;margin:0 auto;padding:24px}
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:20px}
+.top h1{margin:0;font-size:24px}
+.auth{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.auth input{width:min(320px,70vw)}
+.status{min-height:1.4em;color:#666;margin:0 0 16px}
+.list{display:grid;gap:14px}
+.card{display:grid;grid-template-columns:140px 1fr;gap:16px;background:#fff;border:1px solid #eadfd6;border-radius:16px;padding:16px}
+.card img{width:140px;height:140px;object-fit:cover;border-radius:12px;background:#fcf2ec}
+.meta h2{margin:0 0 6px;font-size:18px}
+.meta .muted{color:#777;margin:0 0 10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.row label{flex:1;min-width:140px}
+.row .grow{flex:2}
+.options{display:grid;gap:8px;margin:12px 0}
+.option-row{display:grid;grid-template-columns:1fr 120px auto;gap:8px;align-items:center}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.msg{margin:8px 0 0;color:#166534}
+.err{margin:8px 0 0;color:#b42318}
+@media(max-width:720px){
+  .card{grid-template-columns:1fr}
+  .card img{width:100%;height:220px}
+  .option-row{grid-template-columns:1fr}
+}

@@ -44,9 +44,14 @@ npm run dev
 
 GET /health, /api/config, /api/categories, /api/products?category_id=2&q=닭발, /api/products/{id}
 
-POST /api/orders: customer_name, phone, address, items[{product_id, quantity}]. 서버가 DB 가격으로 상품 합계를 계산. 클라이언트 금액은 사용하지 않음. 결제 처리 없음. pending_payment 상태로 저장.
+POST /api/orders: customer_name, phone, address, items[{product_id, option_id, quantity}]. 서버가 선택 옵션 가격으로 합계를 계산. 클라이언트 금액은 사용하지 않음. 결제 처리 없음. pending_payment 상태로 저장.
 
-GET /api/admin/orders: X-Admin-Key 헤더 인증. 개인정보 포함하므로 백엔드 운영자만 사용. 공개 프론트에서 키 사용 금지.
+관리자 API (`X-Admin-Key` 헤더):
+- GET /api/admin/orders
+- GET/POST /api/admin/products, PUT /api/admin/products/{id}
+- POST /api/admin/products/{id}/image (JPEG/PNG/WebP, R2 업로드)
+
+관리자 화면: 프론트 `/admin` (Netlify). 키는 브라우저에만 입력하며 코드/환경변수에 넣지 않음.
 
 ## 검증
 
@@ -57,7 +62,7 @@ GET /api/admin/orders: X-Admin-Key 헤더 인증. 개인정보 포함하므로 �
 
 실제 카테고리 6개, 제공 캡처의 특수부위 13개. 다른 카테고리는 미등록 상태를 표시. 상품 검색/카테고리 필터/로컬 장바구니/배송정보 검증/주문 저장/관리자 주문 조회 구현.
 
-로고는 캡처 원본 픽셀을 CSS로 표시. 원본 로고 파일을 받으면 교체 가능. 닭가슴살과 무뼈닭발은 AI 연출 이미지. 나머지는 제공한 캡처 원본. 금액과 옵션은 캡처에서 읽은 초기 자료로 실제 판매 전 검수 필요. 배송비·세금·결제·회원·재고·취소/환불·관리자 화면은 아직 미구현.
+금액과 옵션은 캡처에서 읽은 초기 자료로 실제 판매 전 검수 필요. 관리자 화면에서 상품 이미지·추가옵션(용량/가격) 편집 가능. 배송비·세금·결제·회원·재고·취소/환불은 아직 미구현.
 
 초기 스키마 생성은 seed 명령으로 명시 실행. 후속 스키마 변경부터 Alembic 마이그레이션 도입 필요.
 
