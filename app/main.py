@@ -110,6 +110,8 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(100), default='')
     phone: Mapped[str] = mapped_column(String(30), default='')
     provider: Mapped[str] = mapped_column(String(20), default='local')  # local|kakao|naver
+    note: Mapped[str] = mapped_column(String(2000), default='')
+    blocked: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -553,6 +555,8 @@ def auth_login(data: LoginIn, session: Session = Depends(db)):
     user = session.scalar(select(User).where(User.username == data.username.strip()))
     if not user or user.provider != 'local' or not verify_password(data.password, user.password_hash):
         raise HTTPException(401, '아이디 또는 비밀번호를 확인해 주세요.')
+    if user.blocked:
+        raise HTTPException(403, '이용이 제한된 계정입니다. 고객센터에 문의해 주세요.')
     return create_login_session(session, user)
 
 
@@ -772,6 +776,150 @@ def admin_update_order_status(
     order.status = data.status
     session.commit()
     return serialize_order(session, order)
+
+
+class CustomerUpdateIn(BaseModel):
+    note: str = Field(default='', max_length=2000)
+    blocked: bool = False
+
+
+def customer_stats(session: Session, user_id: int) -> dict:
+    rows = list(session.scalars(select(Order).where(Order.user_id == user_id)))
+    return {
+        'order_count': len(rows),
+        'order_total': sum(o.total for o in rows),
+        'last_order_at': max((o.created_at for o in rows), default=None),
+    }
+
+
+def serialize_customer(session: Session, user: User, include_orders: bool = False) -> dict:
+    stats = customer_stats(session, user.id)
+    item = {
+        'id': user.id,
+        'username': user.username,
+        'name': user.name,
+        'phone': user.phone or '',
+        'provider': user.provider,
+        'note': user.note or '',
+        'blocked': bool(user.blocked),
+        'created_at': user.created_at,
+        'order_count': stats['order_count'],
+        'order_total': stats['order_total'],
+        'last_order_at': stats['last_order_at'],
+    }
+    if include_orders:
+        orders = list(
+            session.scalars(select(Order).where(Order.user_id == user.id).order_by(Order.created_at.desc()).limit(50))
+        )
+        item['orders'] = [serialize_order(session, o) for o in orders]
+    return item
+
+
+@app.get('/api/admin/customers')
+def admin_customers(q: str = '', _: None = Depends(require_admin), session: Session = Depends(db)):
+    users = list(session.scalars(select(User).order_by(User.id.desc()).limit(300)))
+    query = (q or '').strip().lower()
+    result = []
+    for user in users:
+        if query:
+            blob = f'{user.username} {user.name} {user.phone}'.lower()
+            if query not in blob:
+                continue
+        result.append(serialize_customer(session, user))
+    # 비회원: user_id 없는 주문을 연락처 기준으로 묶음
+    guest_orders = list(session.scalars(select(Order).where(Order.user_id.is_(None)).order_by(Order.created_at.desc()).limit(200)))
+    guests: dict[str, dict] = {}
+    for o in guest_orders:
+        key = (o.phone or '').strip() or o.id
+        if query and query not in f'{o.customer_name} {o.phone}'.lower():
+            continue
+        bucket = guests.setdefault(
+            key,
+            {
+                'id': f'guest:{key}',
+                'username': '',
+                'name': o.customer_name,
+                'phone': o.phone,
+                'provider': 'guest',
+                'note': '',
+                'blocked': False,
+                'created_at': o.created_at,
+                'order_count': 0,
+                'order_total': 0,
+                'last_order_at': o.created_at,
+                'is_guest': True,
+            },
+        )
+        bucket['order_count'] += 1
+        bucket['order_total'] += o.total
+        if o.created_at and (bucket['last_order_at'] is None or o.created_at > bucket['last_order_at']):
+            bucket['last_order_at'] = o.created_at
+            bucket['name'] = o.customer_name
+    result.extend(guests.values())
+    result.sort(key=lambda x: x.get('last_order_at') or x.get('created_at') or '', reverse=True)
+    return result
+
+
+@app.get('/api/admin/customers/{customer_id}')
+def admin_customer_detail(customer_id: str, _: None = Depends(require_admin), session: Session = Depends(db)):
+    if customer_id.startswith('guest:'):
+        phone = customer_id[6:]
+        orders = list(
+            session.scalars(
+                select(Order)
+                .where(Order.user_id.is_(None), Order.phone == phone)
+                .order_by(Order.created_at.desc())
+                .limit(50)
+            )
+        )
+        if not orders:
+            raise HTTPException(404, '고객을 찾을 수 없습니다.')
+        latest = orders[0]
+        return {
+            'id': customer_id,
+            'username': '',
+            'name': latest.customer_name,
+            'phone': latest.phone,
+            'provider': 'guest',
+            'note': '',
+            'blocked': False,
+            'created_at': latest.created_at,
+            'order_count': len(orders),
+            'order_total': sum(o.total for o in orders),
+            'last_order_at': latest.created_at,
+            'is_guest': True,
+            'orders': [serialize_order(session, o) for o in orders],
+        }
+    try:
+        uid = int(customer_id)
+    except ValueError as exc:
+        raise HTTPException(404, '고객을 찾을 수 없습니다.') from exc
+    user = session.get(User, uid)
+    if not user:
+        raise HTTPException(404, '고객을 찾을 수 없습니다.')
+    return serialize_customer(session, user, include_orders=True)
+
+
+@app.put('/api/admin/customers/{customer_id}')
+def admin_update_customer(
+    customer_id: str,
+    data: CustomerUpdateIn,
+    _: None = Depends(require_admin),
+    session: Session = Depends(db),
+):
+    if customer_id.startswith('guest:'):
+        raise HTTPException(422, '비회원은 메모·차단을 저장할 수 없습니다. 회원 가입 후 관리하세요.')
+    try:
+        uid = int(customer_id)
+    except ValueError as exc:
+        raise HTTPException(404, '고객을 찾을 수 없습니다.') from exc
+    user = session.get(User, uid)
+    if not user:
+        raise HTTPException(404, '고객을 찾을 수 없습니다.')
+    user.note = (data.note or '').strip()
+    user.blocked = data.blocked
+    session.commit()
+    return serialize_customer(session, user, include_orders=True)
 
 
 @app.get('/api/admin/products')

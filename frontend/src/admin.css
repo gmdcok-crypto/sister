@@ -24,6 +24,19 @@ input,select,textarea{width:100%;border:1px solid #ddd;border-radius:10px;paddin
 .order-actions label{display:flex;gap:8px;align-items:center}
 .order-actions select{width:auto;min-width:140px}
 .empty-orders{background:#fffaf6;border:2px dashed #ff633e;border-radius:16px;padding:28px 24px;min-height:220px}
+.customer-toolbar{display:flex;gap:8px;margin-bottom:12px}
+.customer-toolbar input{flex:1}
+.customer-list{display:grid;gap:8px}
+.customer-row{display:flex;justify-content:space-between;gap:12px;align-items:center;text-align:left;background:#fff;border:1px solid #eadfd6;border-radius:14px;padding:14px 16px;color:inherit}
+.customer-row .muted{margin:4px 0 0}
+.customer-stats{display:grid;gap:4px;text-align:right;font-size:13px}
+.pill{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:#fcf2ec;border:1px solid #eadfd6;font-size:12px;font-weight:600;color:#666}
+.pill.danger{background:#fff1f0;border-color:#f0c7c2;color:#b42318}
+.customer-detail{background:#fff;border:1px solid #eadfd6;border-radius:16px;padding:16px}
+.block-label{display:grid;gap:6px;margin:14px 0}
+.block-label textarea{min-height:96px;resize:vertical}
+.customer-orders{display:grid;gap:10px}
+.customer-order{padding:10px 12px;border-radius:12px;background:#fcfaf8;border:1px solid #eadfd6}
 .empty-orders h2{margin:0 0 8px;font-size:20px}
 .empty-orders p{margin:0 0 12px;color:#555}
 .empty-orders ul{margin:0 0 16px;padding-left:18px;color:#444;line-height:1.7}

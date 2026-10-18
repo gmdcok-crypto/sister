@@ -41,6 +41,19 @@ def ensure_order_user_column():
     )
 
 
+def ensure_user_admin_columns():
+    _add_column_if_missing(
+        'users',
+        'note',
+        "ALTER TABLE users ADD COLUMN note VARCHAR(2000) NOT NULL DEFAULT ''",
+    )
+    _add_column_if_missing(
+        'users',
+        'blocked',
+        'ALTER TABLE users ADD COLUMN blocked BOOLEAN NOT NULL DEFAULT 0',
+    )
+
+
 def category_rows(catalog):
     rows = []
     for i, item in enumerate(catalog['categories'], 1):
@@ -80,6 +93,7 @@ def main():
     ensure_category_image_column()
     ensure_order_item_option_column()
     ensure_order_user_column()
+    ensure_user_admin_columns()
     catalog = json.loads((Path(__file__).parents[1] / 'catalog.json').read_text(encoding='utf-8'))
     with SessionLocal() as session:
         for row in category_rows(catalog):

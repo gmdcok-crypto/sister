@@ -213,3 +213,19 @@ def test_auth_register_login():
     login = client.post('/api/auth/login', json={'username': 'buyer01', 'password': 'pass1234'})
     assert login.status_code == 200 and login.json()['token']
     assert client.get('/api/auth/social/kakao/start').status_code == 503
+
+
+def test_admin_customers():
+    listed = client.get('/api/admin/customers', headers=ADMIN)
+    assert listed.status_code == 200
+    assert any(c.get('username') == 'buyer01' for c in listed.json())
+    user = next(c for c in listed.json() if c.get('username') == 'buyer01')
+    updated = client.put(
+        f"/api/admin/customers/{user['id']}",
+        headers=ADMIN,
+        json={'note': '단골 고객', 'blocked': False},
+    )
+    assert updated.status_code == 200
+    assert updated.json()['note'] == '단골 고객'
+    detail = client.get(f"/api/admin/customers/{user['id']}", headers=ADMIN)
+    assert detail.status_code == 200 and detail.json()['note'] == '단골 고객'

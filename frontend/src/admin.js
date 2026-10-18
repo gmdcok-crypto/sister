@@ -18,6 +18,9 @@ let adminKey = localStorage.getItem(KEY) || ''
 let products = []
 let categories = []
 let orders = []
+let customers = []
+let customerDetail = null
+let customerQuery = ''
 let tab = 'products'
 
 const app = document.querySelector('#app')
@@ -35,10 +38,12 @@ app.innerHTML = `
     <nav class="tabs" id="tabs" hidden>
       <button type="button" class="tab is-active" data-tab="products">상품</button>
       <button type="button" class="tab" data-tab="orders">주문</button>
+      <button type="button" class="tab" data-tab="customers">고객</button>
     </nav>
     <p class="status" id="status">관리자 키를 입력한 뒤 불러오기를 눌러 주세요.</p>
     <div id="panel-products" class="panel list"></div>
     <div id="panel-orders" class="panel order-list is-hidden" hidden></div>
+    <div id="panel-customers" class="panel customer-panel is-hidden" hidden></div>
   </div>
 `
 
@@ -222,25 +227,38 @@ function readAddons(cardEl) {
   }).filter((o) => o.label)
 }
 
+function providerLabel(p) {
+  if (p === 'kakao') return '카카오'
+  if (p === 'naver') return '네이버'
+  if (p === 'guest') return '비회원'
+  return '회원'
+}
+
 function setTab(next) {
-  tab = next === 'orders' ? 'orders' : 'products'
-  const productsPanel = document.querySelector('#panel-products')
-  const ordersPanel = document.querySelector('#panel-orders')
+  tab = ['products', 'orders', 'customers'].includes(next) ? next : 'products'
+  const panels = {
+    products: document.querySelector('#panel-products'),
+    orders: document.querySelector('#panel-orders'),
+    customers: document.querySelector('#panel-customers'),
+  }
   document.querySelectorAll('.tab').forEach((el) => el.classList.toggle('is-active', el.dataset.tab === tab))
-  const showProducts = tab === 'products'
-  productsPanel.classList.toggle('is-hidden', !showProducts)
-  ordersPanel.classList.toggle('is-hidden', showProducts)
-  productsPanel.hidden = !showProducts
-  ordersPanel.hidden = showProducts
-  productsPanel.style.display = showProducts ? '' : 'none'
-  ordersPanel.style.display = showProducts ? 'none' : ''
-  document.querySelector('#new-product').hidden = !showProducts || !categories.length
-  document.querySelector('#page-title').textContent = showProducts ? '상품 관리' : '주문 관리'
-  if (showProducts) {
-    setStatus(`상품 ${products.filter((p) => p.id !== 'new').length}개`)
-  } else {
+  Object.entries(panels).forEach(([name, el]) => {
+    const on = name === tab
+    el.classList.toggle('is-hidden', !on)
+    el.hidden = !on
+    el.style.display = on ? '' : 'none'
+  })
+  document.querySelector('#new-product').hidden = tab !== 'products' || !categories.length
+  const titles = { products: '상품 관리', orders: '주문 관리', customers: '고객 관리' }
+  document.querySelector('#page-title').textContent = titles[tab]
+  if (tab === 'products') setStatus(`상품 ${products.filter((p) => p.id !== 'new').length}개`)
+  if (tab === 'orders') {
     renderOrders()
     setStatus(`주문 ${orders.length}건`)
+  }
+  if (tab === 'customers') {
+    renderCustomers()
+    setStatus(`고객 ${customers.length}명`)
   }
 }
 
@@ -272,6 +290,98 @@ function renderOrders() {
   `
 }
 
+function customerRow(c) {
+  return `
+    <button type="button" class="customer-row" data-open-customer="${esc(String(c.id))}">
+      <div>
+        <strong>${esc(c.name || c.username || '고객')}</strong>
+        <span class="pill">${providerLabel(c.provider)}</span>
+        ${c.blocked ? '<span class="pill danger">차단</span>' : ''}
+        <p class="muted">${esc(c.username ? `@${c.username}` : '비회원')} · ${esc(c.phone || '-')}</p>
+      </div>
+      <div class="customer-stats">
+        <span>주문 ${c.order_count || 0}건</span>
+        <strong>${won(c.order_total || 0)}</strong>
+      </div>
+    </button>
+  `
+}
+
+function customerDetailView(c) {
+  const ordersHtml = (c.orders || []).length
+    ? c.orders.map((o) => `
+      <div class="customer-order">
+        <div><strong>${won(o.total)}</strong> · ${esc(o.status_label || o.status)}</div>
+        <p class="muted">${formatWhen(o.created_at)} · ${esc(o.id)}</p>
+        <p>${esc(o.address || '')}</p>
+      </div>
+    `).join('')
+    : '<p class="muted">주문 내역이 없습니다.</p>'
+  const editable = !c.is_guest && !String(c.id).startsWith('guest:')
+  return `
+    <section class="customer-detail" data-customer-id="${esc(String(c.id))}">
+      <button type="button" class="secondary" data-back-customers>← 목록</button>
+      <h2>${esc(c.name || c.username || '고객')} <span class="pill">${providerLabel(c.provider)}</span></h2>
+      <p class="muted">${editable ? `@${esc(c.username)}` : '비회원'} · ${esc(c.phone || '-')} · 가입/최근 ${formatWhen(c.created_at)}</p>
+      <p><strong>누적</strong> 주문 ${c.order_count || 0}건 · ${won(c.order_total || 0)}</p>
+      ${editable ? `
+      <label class="block-label">CS 메모
+        <textarea data-customer-note rows="4" placeholder="통화·배송 메모">${esc(c.note || '')}</textarea>
+      </label>
+      <label class="check"><input type="checkbox" data-customer-blocked ${c.blocked ? 'checked' : ''}> 이용 차단</label>
+      <div class="actions">
+        <button type="button" data-save-customer>고객 정보 저장</button>
+        <span class="msg" data-customer-msg hidden></span>
+      </div>` : '<p class="muted">비회원은 주문 내역만 확인할 수 있습니다.</p>'}
+      <h3 class="section-title">주문 내역</h3>
+      <div class="customer-orders">${ordersHtml}</div>
+    </section>
+  `
+}
+
+function renderCustomers() {
+  const panel = document.querySelector('#panel-customers')
+  if (customerDetail) {
+    panel.innerHTML = customerDetailView(customerDetail)
+    return
+  }
+  panel.innerHTML = `
+    <div class="customer-toolbar">
+      <input id="customer-q" type="search" placeholder="이름·아이디·연락처 검색" value="${esc(customerQuery)}">
+      <button type="button" class="secondary" data-search-customers>검색</button>
+    </div>
+    <div class="customer-list">
+      ${customers.length ? customers.map(customerRow).join('') : `
+        <section class="empty-orders">
+          <h2>등록된 고객이 없습니다</h2>
+          <p>회원가입·주문 고객이 생기면 여기에 표시됩니다.</p>
+          <ul>
+            <li>회원: 아이디/이름/연락처, 주문 수·누적금액</li>
+            <li>비회원: 연락처 기준으로 주문을 묶어 표시</li>
+            <li>회원 상세에서 CS 메모·이용 차단을 저장할 수 있습니다</li>
+          </ul>
+        </section>`}
+    </div>
+  `
+}
+
+async function openCustomer(id) {
+  setStatus('고객 불러오는 중…')
+  try {
+    customerDetail = await request(`/api/admin/customers/${encodeURIComponent(id)}`)
+    renderCustomers()
+    setStatus(`${customerDetail.name || customerDetail.username || '고객'} 상세`)
+  } catch (error) {
+    setStatus(error.message, true)
+  }
+}
+
+async function loadCustomers() {
+  const q = customerQuery ? `?q=${encodeURIComponent(customerQuery)}` : ''
+  customers = await request(`/api/admin/customers${q}`)
+  customerDetail = null
+}
+
 async function load() {
   if (!api) {
     setStatus('VITE_API_URL이 설정되지 않았습니다.', true)
@@ -286,17 +396,21 @@ async function load() {
       request('/api/admin/products'),
       request('/api/admin/orders'),
     ])
+    await loadCustomers()
     document.querySelector('#tabs').hidden = false
     renderProducts()
     renderOrders()
+    renderCustomers()
     setTab(tab)
   } catch (error) {
     products = []
     orders = []
+    customers = []
     document.querySelector('#tabs').hidden = true
     document.querySelector('#new-product').hidden = true
     renderProducts()
     renderOrders()
+    renderCustomers()
     setStatus(error.message, true)
   }
 }
@@ -507,6 +621,75 @@ document.querySelector('#panel-orders').addEventListener('click', async (e) => {
     msg.textContent = error.message
     btn.disabled = false
   }
+})
+
+document.querySelector('#panel-customers').addEventListener('click', async (e) => {
+  if (e.target.closest('[data-back-customers]')) {
+    customerDetail = null
+    renderCustomers()
+    setStatus(`고객 ${customers.length}명`)
+    return
+  }
+  if (e.target.closest('[data-search-customers]')) {
+    customerQuery = document.querySelector('#customer-q')?.value.trim() || ''
+    try {
+      await loadCustomers()
+      renderCustomers()
+      setStatus(`고객 ${customers.length}명`)
+    } catch (error) {
+      setStatus(error.message, true)
+    }
+    return
+  }
+  const open = e.target.closest('[data-open-customer]')
+  if (open) {
+    openCustomer(open.dataset.openCustomer)
+    return
+  }
+  const save = e.target.closest('[data-save-customer]')
+  if (!save) return
+  const root = e.target.closest('[data-customer-id]')
+  const id = root.dataset.customerId
+  const msg = root.querySelector('[data-customer-msg]')
+  save.disabled = true
+  msg.hidden = false
+  msg.className = 'msg'
+  msg.textContent = '저장 중…'
+  try {
+    customerDetail = await request(`/api/admin/customers/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        note: root.querySelector('[data-customer-note]')?.value || '',
+        blocked: !!root.querySelector('[data-customer-blocked]')?.checked,
+      }),
+    })
+    const idx = customers.findIndex((c) => String(c.id) === String(id))
+    if (idx >= 0) {
+      customers[idx] = {
+        ...customers[idx],
+        note: customerDetail.note,
+        blocked: customerDetail.blocked,
+      }
+    }
+    renderCustomers()
+    const fresh = document.querySelector('[data-customer-msg]')
+    if (fresh) {
+      fresh.hidden = false
+      fresh.className = 'msg'
+      fresh.textContent = '저장됨'
+    }
+  } catch (error) {
+    msg.className = 'err'
+    msg.textContent = error.message
+    save.disabled = false
+  }
+})
+
+document.querySelector('#panel-customers').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || e.target.id !== 'customer-q') return
+  e.preventDefault()
+  document.querySelector('[data-search-customers]')?.click()
 })
 
 if (adminKey) load()
