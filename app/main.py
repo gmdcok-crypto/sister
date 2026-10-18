@@ -4,13 +4,13 @@ import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Set, Union
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field, AliasChoices, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, create_engine, select, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint, create_engine, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 ALLOWED_IMAGE_TYPES = {
@@ -74,6 +74,26 @@ class ProductOption(Base):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
+class ProductAddon(Base):
+    """추가옵션: 본옵션과 함께 선택하는 부가 항목."""
+    __tablename__ = 'product_addons'
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey('products.id'), index=True)
+    label: Mapped[str] = mapped_column(String(200))
+    price: Mapped[int] = mapped_column(Integer, default=0)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class ProductAddonLink(Base):
+    """비어 있으면 모든 본옵션에 노출. 있으면 해당 본옵션에만 노출."""
+    __tablename__ = 'product_addon_links'
+    __table_args__ = (UniqueConstraint('addon_id', 'option_id', name='uq_addon_option'),)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    addon_id: Mapped[int] = mapped_column(ForeignKey('product_addons.id'), index=True)
+    option_id: Mapped[int] = mapped_column(ForeignKey('product_options.id'), index=True)
+
+
 class Order(Base):
     __tablename__ = 'orders'
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
@@ -96,6 +116,15 @@ class OrderItem(Base):
     unit_price: Mapped[int] = mapped_column(Integer)
 
 
+class OrderItemAddon(Base):
+    __tablename__ = 'order_item_addons'
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    order_item_id: Mapped[int] = mapped_column(ForeignKey('order_items.id'), index=True)
+    label: Mapped[str] = mapped_column(String(200))
+    unit_price: Mapped[int] = mapped_column(Integer)
+    quantity: Mapped[int] = mapped_column(Integer, default=1)
+
+
 def db():
     with SessionLocal() as session:
         yield session
@@ -108,6 +137,13 @@ class OptionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AddonOut(BaseModel):
+    id: int
+    label: str
+    price: int
+    option_ids: List[int] = []  # empty => all options
+
+
 class ProductOut(BaseModel):
     id: int
     category_id: int
@@ -116,13 +152,20 @@ class ProductOut(BaseModel):
     price: int
     image: str
     options: List[OptionOut] = []
+    addons: List[AddonOut] = []
     model_config = ConfigDict(from_attributes=True)
+
+
+class AddonLineIn(BaseModel):
+    addon_id: int = Field(gt=0)
+    quantity: int = Field(default=1, ge=1, le=10)
 
 
 class LineIn(BaseModel):
     product_id: int = Field(gt=0)
     option_id: Optional[int] = Field(default=None, gt=0)
     quantity: int = Field(ge=1, le=100)
+    addons: List[AddonLineIn] = Field(default_factory=list, max_length=20)
 
 
 class OrderIn(BaseModel):
@@ -146,12 +189,28 @@ class OptionIn(BaseModel):
         return value
 
 
+class AddonIn(BaseModel):
+    id: Optional[int] = Field(default=None, gt=0)
+    label: str = Field(min_length=1, max_length=200)
+    price: int = Field(ge=0, le=10_000_000)
+    option_ids: List[int] = Field(default_factory=list, max_length=30)
+
+    @field_validator('label')
+    @classmethod
+    def strip_label(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError('추가옵션명을 입력해 주세요.')
+        return value
+
+
 class ProductUpdateIn(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     category_id: int = Field(gt=0)
     active: bool = True
     image: Optional[str] = Field(default=None, max_length=500)
     options: List[OptionIn] = Field(min_length=1, max_length=30)
+    addons: List[AddonIn] = Field(default_factory=list, max_length=30)
 
     @field_validator('name')
     @classmethod
@@ -189,6 +248,34 @@ def product_options(session: Session, product_id: int) -> List[ProductOption]:
     )
 
 
+def product_addons(session: Session, product_id: int) -> List[ProductAddon]:
+    return list(
+        session.scalars(
+            select(ProductAddon)
+            .where(ProductAddon.product_id == product_id, ProductAddon.active == True)
+            .order_by(ProductAddon.position, ProductAddon.id)
+        )
+    )
+
+
+def addon_option_ids(session: Session, addon_id: int) -> List[int]:
+    return list(session.scalars(select(ProductAddonLink.option_id).where(ProductAddonLink.addon_id == addon_id)))
+
+
+def serialize_addons(session: Session, product_id: int) -> List[AddonOut]:
+    result = []
+    for addon in product_addons(session, product_id):
+        result.append(
+            AddonOut(
+                id=addon.id,
+                label=addon.label,
+                price=addon.price,
+                option_ids=addon_option_ids(session, addon.id),
+            )
+        )
+    return result
+
+
 def serialize_product(session: Session, product: Product) -> ProductOut:
     opts = product_options(session, product.id)
     if not opts:
@@ -207,6 +294,7 @@ def serialize_product(session: Session, product: Product) -> ProductOut:
         price=price,
         image=product.image,
         options=opts_out,
+        addons=serialize_addons(session, product.id),
     )
 
 
@@ -216,7 +304,7 @@ def sync_product_defaults(product: Product, options: Union[List[OptionIn], List[
     product.price = first.price
 
 
-def replace_options(session: Session, product: Product, options: List[OptionIn]):
+def replace_options(session: Session, product: Product, options: List[OptionIn]) -> List[ProductOption]:
     existing = {
         o.id: o
         for o in session.scalars(select(ProductOption).where(ProductOption.product_id == product.id))
@@ -243,7 +331,79 @@ def replace_options(session: Session, product: Product, options: List[OptionIn])
     for option_id, row in existing.items():
         if option_id not in keep_ids:
             row.active = False
+            # drop addon links pointing at deactivated options
+            for link in session.scalars(select(ProductAddonLink).where(ProductAddonLink.option_id == option_id)):
+                session.delete(link)
     sync_product_defaults(product, options)
+    session.flush()
+    return product_options(session, product.id)
+
+
+def replace_addons(session: Session, product: Product, addons: List[AddonIn], active_option_ids: Set[int]):
+    existing = {
+        a.id: a
+        for a in session.scalars(select(ProductAddon).where(ProductAddon.product_id == product.id))
+    }
+    keep_ids = set()
+    for index, item in enumerate(addons):
+        if item.id and item.id in existing:
+            row = existing[item.id]
+            row.label = item.label
+            row.price = item.price
+            row.position = index
+            row.active = True
+            keep_ids.add(item.id)
+            addon_row = row
+        else:
+            addon_row = ProductAddon(
+                product_id=product.id,
+                label=item.label,
+                price=item.price,
+                position=index,
+                active=True,
+            )
+            session.add(addon_row)
+            session.flush()
+            keep_ids.add(addon_row.id)
+
+        for link in session.scalars(select(ProductAddonLink).where(ProductAddonLink.addon_id == addon_row.id)):
+            session.delete(link)
+        session.flush()
+        for option_id in item.option_ids:
+            if option_id in active_option_ids:
+                session.add(ProductAddonLink(addon_id=addon_row.id, option_id=option_id))
+
+    for addon_id, row in existing.items():
+        if addon_id not in keep_ids:
+            row.active = False
+            for link in session.scalars(select(ProductAddonLink).where(ProductAddonLink.addon_id == addon_id)):
+                session.delete(link)
+
+
+def resolve_addons_for_option(
+    session: Session,
+    product: Product,
+    option_id: Optional[int],
+    addon_lines: List[AddonLineIn],
+) -> List[tuple[ProductAddon, int]]:
+    """Returns list of (addon, qty). Validates availability for selected option."""
+    if not addon_lines:
+        return []
+    available = {a.id: a for a in product_addons(session, product.id)}
+    resolved = []
+    seen = set()
+    for line in addon_lines:
+        if line.addon_id in seen:
+            raise HTTPException(422, f'{product.name}: 추가옵션이 중복되었습니다.')
+        seen.add(line.addon_id)
+        addon = available.get(line.addon_id)
+        if not addon:
+            raise HTTPException(409, f'{product.name}: 사용할 수 없는 추가옵션입니다.')
+        links = addon_option_ids(session, addon.id)
+        if links and (option_id is None or option_id not in links):
+            raise HTTPException(422, f'{product.name}: "{addon.label}"은(는) 선택한 옵션에서 사용할 수 없습니다.')
+        resolved.append((addon, line.quantity))
+    return resolved
 
 
 @asynccontextmanager
@@ -308,15 +468,13 @@ def order(data: OrderIn, session: Session = Depends(db)):
     if not settings.orders_enabled:
         raise HTTPException(503, '현재 주문 접수가 준비 중입니다.')
 
-    # Aggregate by (product_id, option_id) so different options stay separate.
-    counts: dict[tuple[int, Optional[int]], int] = {}
+    product_qty: dict[int, int] = {}
     for line in data.items:
-        key = (line.product_id, line.option_id)
-        counts[key] = counts.get(key, 0) + line.quantity
-        if counts[key] > 100:
+        product_qty[line.product_id] = product_qty.get(line.product_id, 0) + line.quantity
+        if product_qty[line.product_id] > 100:
             raise HTTPException(422, '상품별 최대 수량은 100개입니다.')
 
-    product_ids = {product_id for product_id, _ in counts}
+    product_ids = set(product_qty)
     selected = {
         p.id: p
         for p in session.scalars(select(Product).where(Product.id.in_(product_ids), Product.active == True))
@@ -326,20 +484,26 @@ def order(data: OrderIn, session: Session = Depends(db)):
 
     resolved = []
     total = 0
-    for (product_id, option_id), quantity in counts.items():
-        p = selected[product_id]
-        opts = product_options(session, product_id)
+    for line in data.items:
+        p = selected[line.product_id]
+        opts = product_options(session, p.id)
         if opts:
-            if option_id is None:
+            if line.option_id is None:
                 raise HTTPException(422, f'{p.name}: 옵션을 선택해 주세요.')
-            opt = next((o for o in opts if o.id == option_id), None)
+            opt = next((o for o in opts if o.id == line.option_id), None)
             if not opt:
                 raise HTTPException(409, f'{p.name}: 선택한 옵션을 사용할 수 없습니다.')
-            label, unit_price = opt.label, opt.price
+            label, base_price = opt.label, opt.price
+            option_id = opt.id
         else:
-            label, unit_price = p.option or '기본', p.price
-        total += unit_price * quantity
-        resolved.append((p, label, unit_price, quantity))
+            label, base_price = p.option or '기본', p.price
+            option_id = None
+
+        addon_rows = resolve_addons_for_option(session, p, option_id, line.addons)
+        addon_extra = sum(a.price * qty for a, qty in addon_rows)
+        unit_price = base_price + addon_extra
+        total += unit_price * line.quantity
+        resolved.append((p, label, unit_price, line.quantity, addon_rows))
 
     receipt = Order(
         id=secrets.token_urlsafe(24),
@@ -352,17 +516,26 @@ def order(data: OrderIn, session: Session = Depends(db)):
         raise HTTPException(422, '배송 정보를 확인해 주세요.')
     session.add(receipt)
     session.flush()
-    for p, label, unit_price, quantity in resolved:
-        session.add(
-            OrderItem(
-                order_id=receipt.id,
-                product_id=p.id,
-                product_name=p.name,
-                option_label=label,
-                quantity=quantity,
-                unit_price=unit_price,
-            )
+    for p, label, unit_price, quantity, addon_rows in resolved:
+        item = OrderItem(
+            order_id=receipt.id,
+            product_id=p.id,
+            product_name=p.name,
+            option_label=label,
+            quantity=quantity,
+            unit_price=unit_price,
         )
+        session.add(item)
+        session.flush()
+        for addon, addon_qty in addon_rows:
+            session.add(
+                OrderItemAddon(
+                    order_item_id=item.id,
+                    label=addon.label,
+                    unit_price=addon.price,
+                    quantity=addon_qty,
+                )
+            )
     session.commit()
     return {'order_id': receipt.id, 'total': total, 'status': receipt.status}
 
@@ -370,27 +543,36 @@ def order(data: OrderIn, session: Session = Depends(db)):
 @app.get('/api/admin/orders')
 def admin_orders(_: None = Depends(require_admin), session: Session = Depends(db)):
     orders = session.scalars(select(Order).order_by(Order.created_at.desc()).limit(100))
-    return [
-        {
-            'id': o.id,
-            'customer_name': o.customer_name,
-            'phone': o.phone,
-            'address': o.address,
-            'total': o.total,
-            'status': o.status,
-            'created_at': o.created_at,
-            'items': [
+    result = []
+    for o in orders:
+        items = []
+        for i in session.scalars(select(OrderItem).where(OrderItem.order_id == o.id)):
+            addons = [
+                {'label': a.label, 'unit_price': a.unit_price, 'quantity': a.quantity}
+                for a in session.scalars(select(OrderItemAddon).where(OrderItemAddon.order_item_id == i.id))
+            ]
+            items.append(
                 {
                     'name': i.product_name,
                     'option': i.option_label,
                     'quantity': i.quantity,
                     'unit_price': i.unit_price,
+                    'addons': addons,
                 }
-                for i in session.scalars(select(OrderItem).where(OrderItem.order_id == o.id))
-            ],
-        }
-        for o in orders
-    ]
+            )
+        result.append(
+            {
+                'id': o.id,
+                'customer_name': o.customer_name,
+                'phone': o.phone,
+                'address': o.address,
+                'total': o.total,
+                'status': o.status,
+                'created_at': o.created_at,
+                'items': items,
+            }
+        )
+    return result
 
 
 @app.get('/api/admin/products')
@@ -402,6 +584,20 @@ def admin_products(_: None = Depends(require_admin), session: Session = Depends(
         item['active'] = p.active
         result.append(item)
     return result
+
+
+def _save_product_payload(session: Session, product: Product, data: ProductUpdateIn):
+    product.name = data.name
+    product.category_id = data.category_id
+    product.active = data.active
+    if data.image is not None:
+        product.image = data.image
+    active_opts = replace_options(session, product, data.options)
+    replace_addons(session, product, data.addons, {o.id for o in active_opts})
+    session.commit()
+    item = serialize_product(session, product).model_dump()
+    item['active'] = product.active
+    return item
 
 
 @app.post('/api/admin/products', status_code=201)
@@ -420,11 +616,7 @@ def admin_create_product(data: ProductCreateIn, _: None = Depends(require_admin)
     )
     session.add(product)
     session.flush()
-    replace_options(session, product, data.options)
-    session.commit()
-    item = serialize_product(session, product).model_dump()
-    item['active'] = product.active
-    return item
+    return _save_product_payload(session, product, data)
 
 
 @app.put('/api/admin/products/{product_id}')
@@ -439,16 +631,7 @@ def admin_update_product(
         raise HTTPException(404, '상품을 찾을 수 없습니다.')
     if not session.get(Category, data.category_id):
         raise HTTPException(422, '카테고리를 확인해 주세요.')
-    product.name = data.name
-    product.category_id = data.category_id
-    product.active = data.active
-    if data.image is not None:
-        product.image = data.image
-    replace_options(session, product, data.options)
-    session.commit()
-    item = serialize_product(session, product).model_dump()
-    item['active'] = product.active
-    return item
+    return _save_product_payload(session, product, data)
 
 
 @app.post('/api/admin/products/{product_id}/image')

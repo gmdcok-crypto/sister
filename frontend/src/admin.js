@@ -53,6 +53,30 @@ function optionRows(product) {
   `).join('')
 }
 
+function addonLinkChecks(product, addon) {
+  const opts = (product.options || []).filter((o) => o.id)
+  if (!opts.length) return '<p class="muted">본옵션을 먼저 저장하면 연계할 수 있습니다. 비우면 전체 옵션에 적용됩니다.</p>'
+  const linked = new Set(addon.option_ids || [])
+  return `<div class="link-checks">${opts.map((o) => `
+    <label class="check"><input type="checkbox" data-link-option="${o.id}" ${linked.has(o.id) ? 'checked' : ''}> ${esc(o.label)}</label>
+  `).join('')}<p class="hint">체크 없으면 모든 본옵션에 노출</p></div>`
+}
+
+function addonRows(product) {
+  const addons = product.addons || []
+  if (!addons.length) return ''
+  return addons.map((a, i) => `
+    <div class="addon-row" data-addon-index="${i}">
+      <div class="option-row">
+        <input data-field="addon-label" value="${esc(a.label || '')}" placeholder="추가옵션명 (예: 소스 추가)" ${a.id ? `data-id="${a.id}"` : ''}>
+        <input data-field="addon-price" type="number" min="0" step="10" value="${a.price ?? 0}" placeholder="추가금">
+        <button type="button" class="danger" data-remove-addon>삭제</button>
+      </div>
+      ${addonLinkChecks(product, a)}
+    </div>
+  `).join('')
+}
+
 function card(p) {
   const cat = categories.find((c) => c.id === p.category_id)
   return `
@@ -83,9 +107,16 @@ function card(p) {
             </select>
           </label>
         </div>
+        <h3 class="section-title">본옵션</h3>
         <div class="options" data-options>${optionRows(p)}</div>
         <div class="actions">
           <button type="button" class="secondary" data-add-option>옵션 추가</button>
+        </div>
+        <h3 class="section-title">추가옵션</h3>
+        <p class="muted">본옵션과 함께 고르는 항목입니다. 특정 본옵션에만 보이게 연계할 수 있습니다.</p>
+        <div class="addons" data-addons>${addonRows(p)}</div>
+        <div class="actions">
+          <button type="button" class="secondary" data-add-addon>추가옵션 추가</button>
           <button type="button" data-save="${p.id}">저장</button>
         </div>
         <p class="msg" data-msg hidden></p>
@@ -100,6 +131,19 @@ function readOptions(cardEl) {
     const price = Math.trunc(Number(row.querySelector('[data-field="price"]').value) || 0)
     const id = Number(row.querySelector('[data-field="label"]').dataset.id) || undefined
     return id ? { id, label, price } : { label, price }
+  }).filter((o) => o.label)
+}
+
+function readAddons(cardEl) {
+  return [...cardEl.querySelectorAll('[data-addon-index]')].map((row) => {
+    const labelEl = row.querySelector('[data-field="addon-label"]')
+    const label = labelEl.value.trim()
+    const price = Math.trunc(Number(row.querySelector('[data-field="addon-price"]').value) || 0)
+    const id = Number(labelEl.dataset.id) || undefined
+    const option_ids = [...row.querySelectorAll('[data-link-option]:checked')].map((el) => +el.dataset.linkOption)
+    const item = { label, price, option_ids }
+    if (id) item.id = id
+    return item
   }).filter((o) => o.label)
 }
 
@@ -159,6 +203,30 @@ document.querySelector('#list').addEventListener('click', async (e) => {
     return
   }
 
+  const addAddon = e.target.closest('[data-add-addon]')
+  if (addAddon) {
+    const cardEl = addAddon.closest('[data-product]')
+    const product = products.find((p) => p.id === +cardEl.dataset.product)
+    const box = cardEl.querySelector('[data-addons]')
+    const i = box.querySelectorAll('[data-addon-index]').length
+    box.insertAdjacentHTML('beforeend', `
+      <div class="addon-row" data-addon-index="${i}">
+        <div class="option-row">
+          <input data-field="addon-label" value="" placeholder="추가옵션명 (예: 소스 추가)">
+          <input data-field="addon-price" type="number" min="0" step="10" value="0" placeholder="추가금">
+          <button type="button" class="danger" data-remove-addon>삭제</button>
+        </div>
+        ${addonLinkChecks(product || { options: [] }, { option_ids: [] })}
+      </div>
+    `)
+    return
+  }
+
+  if (e.target.closest('[data-remove-addon]')) {
+    e.target.closest('[data-addon-index]').remove()
+    return
+  }
+
   const saveId = +e.target.closest('[data-save]')?.dataset.save
   if (!saveId) return
   const cardEl = e.target.closest('[data-product]')
@@ -175,6 +243,7 @@ document.querySelector('#list').addEventListener('click', async (e) => {
     category_id: Number(cardEl.querySelector('[data-field="category_id"]').value),
     active: cardEl.querySelector('[data-field="active"]').value === 'true',
     options,
+    addons: readAddons(cardEl),
   }
   e.target.disabled = true
   msg.hidden = false
@@ -193,7 +262,7 @@ document.querySelector('#list').addEventListener('click', async (e) => {
     if (fresh) {
       fresh.hidden = false
       fresh.className = 'msg'
-      fresh.textContent = `저장됨 · 기본 ${won(updated.price)}`
+      fresh.textContent = `저장됨 · 본옵션 ${updated.options.length} · 추가옵션 ${(updated.addons || []).length}`
     }
   } catch (error) {
     msg.className = 'err'
@@ -219,7 +288,7 @@ document.querySelector('#list').addEventListener('change', async (e) => {
     if (idx >= 0) products[idx].image = result.image
     const preview = document.querySelector(`#preview-${productId}`)
     if (preview) preview.src = result.image + '?t=' + Date.now()
-    msg.textContent = '이미지 반영됨 · 상품 저장은 별도로 눌러 주세요(이미지는 바로 적용).'
+    msg.textContent = '이미지 반영됨'
   } catch (error) {
     msg.className = 'err'
     msg.textContent = error.message

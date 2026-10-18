@@ -23,6 +23,13 @@ input,select,textarea{width:100%;border:1px solid #ddd;border-radius:10px;paddin
 .options{display:grid;gap:8px;margin:12px 0}
 .option-row{display:grid;grid-template-columns:1fr 120px auto;gap:8px;align-items:center}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.section-title{margin:16px 0 8px;font-size:15px}
+.addons{display:grid;gap:12px;margin:8px 0}
+.addon-row{padding:12px;border:1px solid #eadfd6;border-radius:12px;background:#fcfaf8}
+.link-checks{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px}
+.link-checks .check{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#444}
+.link-checks .check input{width:auto}
+.hint{width:100%;margin:4px 0 0;font-size:12px;color:#888}
 .msg{margin:8px 0 0;color:#166534}
 .err{margin:8px 0 0;color:#b42318}
 @media(max-width:720px){

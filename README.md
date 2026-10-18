@@ -44,14 +44,14 @@ npm run dev
 
 GET /health, /api/config, /api/categories, /api/products?category_id=2&q=닭발, /api/products/{id}
 
-POST /api/orders: customer_name, phone, address, items[{product_id, option_id, quantity}]. 서버가 선택 옵션 가격으로 합계를 계산. 클라이언트 금액은 사용하지 않음. 결제 처리 없음. pending_payment 상태로 저장.
+POST /api/orders: customer_name, phone, address, items[{product_id, option_id, quantity, addons[{addon_id, quantity}]}]. 서버가 본옵션+추가옵션 가격으로 합계를 계산. 클라이언트 금액은 사용하지 않음. 결제 처리 없음. pending_payment 상태로 저장.
 
 관리자 API (`X-Admin-Key` 헤더):
 - GET /api/admin/orders
-- GET/POST /api/admin/products, PUT /api/admin/products/{id}
+- GET/POST /api/admin/products, PUT /api/admin/products/{id} (본옵션·추가옵션·옵션 연계)
 - POST /api/admin/products/{id}/image (JPEG/PNG/WebP, R2 업로드)
 
-관리자 화면: 프론트 `/admin` (Netlify). 키는 브라우저에만 입력하며 코드/환경변수에 넣지 않음.
+관리자 화면: 프론트 `/admin` (Netlify). 키는 브라우저에만 입력하며 코드/환경변수에 넣지 않음. 추가옵션은 특정 본옵션에만 노출되도록 연계 가능(미지정 시 전체).
 
 ## 검증
 
