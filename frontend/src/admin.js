@@ -37,8 +37,8 @@ app.innerHTML = `
       <button type="button" class="tab" data-tab="orders">주문</button>
     </nav>
     <p class="status" id="status">관리자 키를 입력한 뒤 불러오기를 눌러 주세요.</p>
-    <div id="panel-products" class="list"></div>
-    <div id="panel-orders" class="order-list" hidden></div>
+    <div id="panel-products" class="panel list"></div>
+    <div id="panel-orders" class="panel order-list is-hidden" hidden></div>
   </div>
 `
 
@@ -223,15 +223,23 @@ function readAddons(cardEl) {
 }
 
 function setTab(next) {
-  tab = next
+  tab = next === 'orders' ? 'orders' : 'products'
+  const productsPanel = document.querySelector('#panel-products')
+  const ordersPanel = document.querySelector('#panel-orders')
   document.querySelectorAll('.tab').forEach((el) => el.classList.toggle('is-active', el.dataset.tab === tab))
-  document.querySelector('#panel-products').hidden = tab !== 'products'
-  document.querySelector('#panel-orders').hidden = tab !== 'orders'
-  document.querySelector('#new-product').hidden = tab !== 'products' || !categories.length
-  document.querySelector('#page-title').textContent = tab === 'orders' ? '주문 관리' : '상품 관리'
-  if (tab === 'products') {
+  const showProducts = tab === 'products'
+  productsPanel.classList.toggle('is-hidden', !showProducts)
+  ordersPanel.classList.toggle('is-hidden', showProducts)
+  productsPanel.hidden = !showProducts
+  ordersPanel.hidden = showProducts
+  productsPanel.style.display = showProducts ? '' : 'none'
+  ordersPanel.style.display = showProducts ? 'none' : ''
+  document.querySelector('#new-product').hidden = !showProducts || !categories.length
+  document.querySelector('#page-title').textContent = showProducts ? '상품 관리' : '주문 관리'
+  if (showProducts) {
     setStatus(`상품 ${products.filter((p) => p.id !== 'new').length}개`)
   } else {
+    renderOrders()
     setStatus(`주문 ${orders.length}건`)
   }
 }
