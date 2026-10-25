@@ -121,12 +121,12 @@ function renderSignup(){
   </div>`;
 }
 
-function optionSelect(p,selectedId){const list=opts(p);const sid=selectedId??list[0].id;if(list.length<=1)return `<p class="detail-option-one">${esc(list[0].label)}</p><input type="hidden" data-option-for="${p.id}" value="${list[0].id}">`;return `<label class="option-pick">옵션<select data-option-for="${p.id}" aria-label="${esc(p.name)} 옵션">${list.map(o=>`<option value="${o.id}" ${o.id===sid?'selected':''}>${esc(o.label)} · ${won(o.price)}</option>`).join('')}</select></label>`}
+function optionSelect(p,selectedId){const list=opts(p);const sid=selectedId??list[0].id;if(list.length<=1){const hidden=`<input type="hidden" data-option-for="${p.id}" value="${list[0].id}">`;if(!list[0].label||list[0].label==='기본')return hidden;return `<p class="detail-option-one">${esc(list[0].label)}</p>${hidden}`}return `<label class="option-pick">옵션<select data-option-for="${p.id}" aria-label="${esc(p.name)} 옵션">${list.map(o=>`<option value="${o.id}" ${o.id===sid?'selected':''}>${esc(o.label)} · ${won(o.price)}</option>`).join('')}</select></label>`}
 function addonSelect(p,optionId){const list=addonsFor(p,optionId);if(!list.length)return '';return `<div class="addon-pick" data-addons-for="${p.id}"><p class="detail-label">추가옵션</p>${list.map(a=>`<label class="addon-check"><input type="checkbox" data-addon-id="${a.id}" value="${a.id}"> ${esc(a.label)} <span>+${won(a.price)}</span></label>`).join('')}</div>`}
 function selectedAddonIds(root){return [...(root?.querySelectorAll('[data-addon-id]:checked')||[])].map(el=>+el.value)}
 function currentOptionId(root,p){const el=root.querySelector('[data-option-for]');return el?+el.value:opts(p)[0].id}
 
-function renderGrid(){const filtered=products.filter(p=>(!selected||p.category_id===selected)&&p.name.includes(search));document.querySelector('#title').textContent=categories.find(c=>c.id===selected)?.name||'전체상품';document.querySelector('#results').textContent=filtered.length+'개 상품';document.querySelector('#grid').innerHTML=filtered.length?filtered.map(p=>{const first=opts(p)[0];const more=opts(p).length>1||(p.addons||[]).length;return `<article class="product-card" data-open-product="${p.id}" tabindex="0" role="link" aria-label="${esc(p.name)} 상세 보기">${image(p)}<h3>${esc(p.name)}</h3>${p.description?`<p class="card-desc">${esc(p.description)}</p>`:''}${(first.label&&first.label!=='기본')||more?`<p class="card-option">${esc(first.label)}${more?' 외':''}</p>`:''}<div class="price"><strong>${won(first.price)}${more?'~':''}</strong><button type="button" data-open-product="${p.id}">자세히</button></div></article>`}).join(''):'<p class="empty">등록된 상품이 없습니다.</p>';document.querySelectorAll('[data-category]').forEach(e=>e.classList.toggle('active',+e.dataset.category===selected))}
+function renderGrid(){const filtered=products.filter(p=>(!selected||p.category_id===selected)&&p.name.includes(search));document.querySelector('#title').textContent=categories.find(c=>c.id===selected)?.name||'전체상품';document.querySelector('#results').textContent=filtered.length+'개 상품';document.querySelector('#grid').innerHTML=filtered.length?filtered.map(p=>{const first=opts(p)[0];const moreOptions=opts(p).length>1;const morePrice=moreOptions||(p.addons||[]).length;const optionLine=first.label&&first.label!=='기본'?`<p class="card-option">${esc(first.label)}${moreOptions?' 외':''}</p>`:'';return `<article class="product-card" data-open-product="${p.id}" tabindex="0" role="link" aria-label="${esc(p.name)} 상세 보기">${image(p)}<h3>${esc(p.name)}</h3>${p.description?`<p class="card-desc">${esc(p.description)}</p>`:''}${optionLine}<div class="price"><strong>${won(first.price)}${morePrice?'~':''}</strong><button type="button" data-open-product="${p.id}">자세히</button></div></article>`}).join(''):'<p class="empty">등록된 상품이 없습니다.</p>';document.querySelectorAll('[data-category]').forEach(e=>e.classList.toggle('active',+e.dataset.category===selected))}
 
 function renderDetail(){
   const view=document.querySelector('#product-view');
@@ -144,7 +144,7 @@ function renderDetail(){
         ${p.description?`<p class="detail-desc">${esc(p.description)}</p>`:''}
         <p class="detail-price"><strong data-price>${won(first.price)}</strong></p>
         <div class="detail-fields">
-          <p class="detail-label">옵션</p>
+          ${opts(p).length>1||(opts(p)[0].label&&opts(p)[0].label!=='기본')?'<p class="detail-label">옵션</p>':''}
           ${optionSelect(p,first.id)}
           ${addonSelect(p,first.id)}
           <label class="qty-pick">수량<input type="number" min="1" max="100" value="1" data-detail-qty aria-label="수량"></label>
