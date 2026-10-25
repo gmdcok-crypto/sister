@@ -190,6 +190,7 @@ function orderCard(o) {
       <div class="order-meta">
         <p><strong>연락처</strong> ${esc(o.phone)}</p>
         <p><strong>주소</strong> ${esc(o.address)}</p>
+        <p><strong>배송</strong> CJ대한통운 ${o.tracking_number ? esc(o.tracking_number) : '운송장 등록 전'}</p>
       </div>
       <ul class="order-items">${items || '<li>상품 없음</li>'}</ul>
       <div class="order-actions">
@@ -199,6 +200,10 @@ function orderCard(o) {
           </select>
         </label>
         <button type="button" data-save-status="${esc(o.id)}">상태 저장</button>
+        <label>CJ 운송장
+          <input class="tracking-input" data-tracking="${esc(o.id)}" value="${esc(o.tracking_number || '')}" inputmode="numeric" maxlength="20" placeholder="운송장번호">
+        </label>
+        <button type="button" data-save-tracking="${esc(o.id)}">운송장 저장</button>
         <span class="msg" data-order-msg hidden></span>
       </div>
     </article>
@@ -314,6 +319,7 @@ function customerDetailView(c) {
         <div><strong>${won(o.total)}</strong> · ${esc(o.status_label || o.status)}</div>
         <p class="muted">${formatWhen(o.created_at)} · ${esc(o.id)}</p>
         <p>${esc(o.address || '')}</p>
+        <p class="muted">${o.tracking_number ? `CJ대한통운 ${esc(o.tracking_number)}` : '운송장 등록 전'}</p>
       </div>
     `).join('')
     : '<p class="muted">주문 내역이 없습니다.</p>'
@@ -615,6 +621,41 @@ document.querySelector('#panel-orders').addEventListener('click', async (e) => {
       fresh.hidden = false
       fresh.className = 'msg'
       fresh.textContent = `상태 변경: ${updated.status_label || updated.status}`
+    }
+  } catch (error) {
+    msg.className = 'err'
+    msg.textContent = error.message
+    btn.disabled = false
+  }
+})
+
+document.querySelector('#panel-orders').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-save-tracking]')
+  if (!btn) return
+  const orderId = btn.dataset.saveTracking
+  const cardEl = e.target.closest('[data-order]')
+  const input = cardEl.querySelector('[data-tracking]')
+  const msg = cardEl.querySelector('[data-order-msg]')
+  btn.disabled = true
+  msg.hidden = false
+  msg.className = 'msg'
+  msg.textContent = '운송장 저장 중…'
+  try {
+    const updated = await request(`/api/admin/orders/${encodeURIComponent(orderId)}/tracking`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tracking_number: input.value }),
+    })
+    const idx = orders.findIndex((o) => o.id === orderId)
+    if (idx >= 0) orders[idx] = updated
+    renderOrders()
+    const fresh = document.querySelector(`[data-order="${CSS.escape(orderId)}"] [data-order-msg]`)
+    if (fresh) {
+      fresh.hidden = false
+      fresh.className = 'msg'
+      fresh.textContent = updated.tracking_number
+        ? `CJ대한통운 ${updated.tracking_number} 저장 · ${updated.status_label}`
+        : '운송장을 지웠습니다.'
     }
   } catch (error) {
     msg.className = 'err'

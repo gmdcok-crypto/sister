@@ -50,6 +50,14 @@ def ensure_order_user_column():
     )
 
 
+def ensure_order_tracking_column():
+    _add_column_if_missing(
+        'orders',
+        'tracking_number',
+        "ALTER TABLE orders ADD COLUMN tracking_number VARCHAR(20) NOT NULL DEFAULT ''",
+    )
+
+
 def ensure_user_admin_columns():
     _add_column_if_missing(
         'users',
@@ -166,6 +174,7 @@ def main():
     ensure_category_image_column()
     ensure_order_item_option_column()
     ensure_order_user_column()
+    ensure_order_tracking_column()
     ensure_user_admin_columns()
     catalog = json.loads((Path(__file__).parents[1] / 'catalog.json').read_text(encoding='utf-8'))
     with SessionLocal() as session:

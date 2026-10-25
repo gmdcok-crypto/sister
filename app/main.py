@@ -142,6 +142,7 @@ class Order(Base):
     customer_name: Mapped[str] = mapped_column(String(100))
     phone: Mapped[str] = mapped_column(String(30))
     address: Mapped[str] = mapped_column(String(500))
+    tracking_number: Mapped[str] = mapped_column(String(20), default='')
     total: Mapped[int] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(40), default='pending_payment')
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -914,6 +915,13 @@ class OrderStatusIn(BaseModel):
         return value
 
 
+def cj_tracking_url(number: str) -> str:
+    digits = ''.join(ch for ch in (number or '') if ch.isdigit())
+    if not digits:
+        return ''
+    return f'https://trace.cjlogistics.com/next/tracking.html?wblNo={digits}'
+
+
 def serialize_order(session: Session, o: Order) -> dict:
     items = []
     for i in session.scalars(select(OrderItem).where(OrderItem.order_id == o.id)):
@@ -935,6 +943,10 @@ def serialize_order(session: Session, o: Order) -> dict:
         'customer_name': o.customer_name,
         'phone': o.phone,
         'address': o.address,
+        'carrier': 'cj',
+        'carrier_label': 'CJ대한통운',
+        'tracking_number': o.tracking_number or '',
+        'tracking_url': cj_tracking_url(o.tracking_number or ''),
         'total': o.total,
         'status': o.status,
         'status_label': ORDER_STATUS_LABELS.get(o.status, o.status),
@@ -962,6 +974,30 @@ def admin_update_order_status(
     if not order:
         raise HTTPException(404, '주문을 찾을 수 없습니다.')
     order.status = data.status
+    session.commit()
+    return serialize_order(session, order)
+
+
+class TrackingIn(BaseModel):
+    tracking_number: str = Field(default='', max_length=30)
+
+
+@app.put('/api/admin/orders/{order_id}/tracking')
+def admin_update_order_tracking(
+    order_id: str,
+    data: TrackingIn,
+    _: None = Depends(require_admin),
+    session: Session = Depends(db),
+):
+    order = session.get(Order, order_id)
+    if not order:
+        raise HTTPException(404, '주문을 찾을 수 없습니다.')
+    digits = ''.join(ch for ch in data.tracking_number if ch.isdigit())
+    if digits and not 10 <= len(digits) <= 14:
+        raise HTTPException(422, 'CJ대한통운 운송장번호는 10~14자리 숫자입니다.')
+    order.tracking_number = digits
+    if digits and order.status in ('paid', 'preparing'):
+        order.status = 'shipping'
     session.commit()
     return serialize_order(session, order)
 

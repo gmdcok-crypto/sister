@@ -178,6 +178,7 @@ function orderHistoryCard(o){
       <p><strong>결제/진행</strong> ${esc(o.payment_label||o.status_label||o.status)}</p>
       <p><strong>받는 분</strong> ${esc(o.customer_name)} · ${esc(o.phone)}</p>
       <p><strong>배송지</strong> ${esc(o.address)}</p>
+      <p><strong>배송조회</strong> ${o.tracking_number?`CJ대한통운 ${esc(o.tracking_number)} <a class="track-link" href="${esc(o.tracking_url)}" target="_blank" rel="noopener">조회하기</a>`:'운송장 등록 전'}</p>
     </div>
   </article>`;
 }

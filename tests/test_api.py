@@ -250,6 +250,20 @@ def test_my_orders_and_lookup():
     assert looked.status_code == 200
     assert looked.json()['id'] == order_id
     assert client.post('/api/orders/lookup', json={'order_id': order_id, 'phone': '01000000000'}).status_code == 404
+    saved = client.put(
+        f'/api/admin/orders/{order_id}/tracking',
+        headers=ADMIN,
+        json={'tracking_number': '1234-5678-9012'},
+    )
+    assert saved.status_code == 200
+    assert saved.json()['tracking_number'] == '123456789012'
+    assert saved.json()['carrier'] == 'cj'
+    assert 'wblNo=123456789012' in saved.json()['tracking_url']
+    assert client.put(
+        f'/api/admin/orders/{order_id}/tracking',
+        headers=ADMIN,
+        json={'tracking_number': '123'},
+    ).status_code == 422
 
 
 def test_user_addresses():
