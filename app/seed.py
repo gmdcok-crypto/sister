@@ -3,7 +3,16 @@ from pathlib import Path
 
 from sqlalchemy import inspect, select, text
 
-from .main import Base, Category, Product, ProductOption, SessionLocal, engine
+from .main import (
+    Base,
+    Category,
+    Product,
+    ProductAddon,
+    ProductAddonLink,
+    ProductOption,
+    SessionLocal,
+    engine,
+)
 
 
 def _add_column_if_missing(table: str, column: str, ddl: str):
@@ -64,6 +73,70 @@ def category_rows(catalog):
     return rows
 
 
+def sync_catalog_choices(session, product: Product, item: dict):
+    """Replace a product's options and addons from catalog labels. Idempotent."""
+    options = item.get('options') or []
+    if options:
+        rows = list(session.scalars(select(ProductOption).where(ProductOption.product_id == product.id)))
+        by_label = {}
+        for row in rows:
+            by_label.setdefault(row.label, row)
+        keep = set()
+        first = None
+        for index, opt in enumerate(options):
+            label = str(opt['label']).strip()[:200]
+            price = int(opt['price'])
+            keep.add(label)
+            row = by_label.get(label)
+            if row is None:
+                row = ProductOption(product_id=product.id, label=label, price=price, position=index, active=True)
+                session.add(row)
+                by_label[label] = row
+            else:
+                row.label = label
+                row.price = price
+                row.position = index
+                row.active = True
+            if first is None:
+                first = row
+        for row in rows:
+            if row.label not in keep:
+                row.active = False
+        session.flush()
+        if first is not None:
+            product.option = first.label
+            product.price = first.price
+
+    if 'addons' not in item:
+        return
+    rows = list(session.scalars(select(ProductAddon).where(ProductAddon.product_id == product.id)))
+    by_label = {}
+    for row in rows:
+        by_label.setdefault(row.label, row)
+    keep = set()
+    for index, addon in enumerate(item.get('addons') or []):
+        label = str(addon['label']).strip()[:200]
+        price = int(addon['price'])
+        keep.add(label)
+        row = by_label.get(label)
+        if row is None:
+            row = ProductAddon(product_id=product.id, label=label, price=price, position=index, active=True)
+            session.add(row)
+            by_label[label] = row
+        else:
+            row.label = label
+            row.price = price
+            row.position = index
+            row.active = True
+        session.flush()
+        for link in session.scalars(select(ProductAddonLink).where(ProductAddonLink.addon_id == row.id)):
+            session.delete(link)
+    for row in rows:
+        if row.label not in keep:
+            row.active = False
+    session.flush()
+
+
 def ensure_product_options(session):
     products = list(session.scalars(select(Product)))
     for product in products:
@@ -106,9 +179,24 @@ def main():
                 session.add(Category(**row))
         session.flush()
         for item in catalog['products']:
-            if not session.get(Product, item['id']):
-                payload = {k: v for k, v in item.items() if k not in {'crop', 'options'}}
-                session.add(Product(**payload))
+            payload = {
+                key: item[key]
+                for key in ('id', 'category_id', 'name', 'option', 'price', 'image')
+                if key in item
+            }
+            product = session.get(Product, item['id'])
+            if product is None:
+                product = Product(**payload)
+                session.add(product)
+                session.flush()
+            else:
+                product.category_id = payload['category_id']
+                product.name = payload['name']
+                product.option = payload.get('option') or product.option
+                product.price = payload['price']
+                product.image = payload['image']
+                product.active = True
+            sync_catalog_choices(session, product, item)
         session.flush()
         ensure_product_options(session)
         session.commit()

@@ -30,73 +30,437 @@
       "id": 1,
       "category_id": 2,
       "name": "무뼈닭발",
-      "option": "500g 선택 옵션",
+      "option": "국내산 무뼈닭발 / 냉동 무뼈닭발 500g",
       "price": 8500,
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-feet-premium.webp"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-feet-premium.webp",
+      "options": [
+        {
+          "label": "국내산 무뼈닭발 / 냉동 무뼈닭발 500g",
+          "price": 8500
+        },
+        {
+          "label": "국내산 무뼈닭발 / 냉동 무뼈닭발 200g+200g",
+          "price": 7600
+        },
+        {
+          "label": "국내산 무뼈닭발 / 냉동 무뼈닭발 1kg",
+          "price": 16000
+        },
+        {
+          "label": "국내산 튤립닭발 / 냉동 튤립닭발 1kg",
+          "price": 11500
+        },
+        {
+          "label": "국내산 손질뼈닭발 / 냉동 뼈있는닭발 1kg",
+          "price": 7000
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
     },
     {
       "id": 2,
       "category_id": 2,
       "name": "육수용 닭뼈",
-      "option": "1kg",
+      "option": "냉장 닭몸통뼈1kg",
       "price": 1490,
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/bones-premium.webp"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/bones-premium.webp",
+      "options": [
+        {
+          "label": "냉장 닭몸통뼈1kg",
+          "price": 1490
+        },
+        {
+          "label": "냉장 닭다리뼈1kg",
+          "price": 1490
+        },
+        {
+          "label": "냉동 닭몸통뼈1kg",
+          "price": 1490
+        },
+        {
+          "label": "냉동 닭다리뼈1kg",
+          "price": 1490
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        }
+      ]
     },
     {
       "id": 3,
       "category_id": 2,
       "name": "닭근위",
-      "option": "500g 선택 옵션",
+      "option": "냉동 닭근위 1kg",
       "price": 4600,
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/gizzard-premium.webp"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/gizzard-premium.webp",
+      "options": [
+        {
+          "label": "냉동 닭근위 1kg",
+          "price": 4600
+        },
+        {
+          "label": "냉동 닭근위 500g",
+          "price": 3100
+        },
+        {
+          "label": "냉동 닭근위 500g + 500g",
+          "price": 6000
+        },
+        {
+          "label": "냉동 염지 닭근위 1kg",
+          "price": 5100
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
     },
     {
       "id": 4,
       "category_id": 2,
-      "name": "무염지 닭다리순살",
-      "option": "1kg",
+      "name": "무염지 닭어깨살",
+      "option": "국내산 냉동 무염지 닭어깨살 1kg",
       "price": 6500,
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/thigh-premium.webp"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/chicken-shoulder-premium.webp",
+      "options": [
+        {
+          "label": "국내산 냉동 무염지 닭어깨살 1kg",
+          "price": 6500
+        }
+      ],
+      "addons": [
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
     },
     {
       "id": 5,
       "category_id": 2,
-      "name": "닭염통·닭간·닭알집",
-      "option": "1kg 소포장",
+      "name": "닭염통·간·알집",
+      "option": "국내산 냉동 닭염통",
       "price": 4500,
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/organs-premium.webp"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/organs-premium.webp",
+      "options": [
+        {
+          "label": "국내산 냉동 닭염통",
+          "price": 4500
+        },
+        {
+          "label": "국내산 냉동 생간",
+          "price": 3500
+        },
+        {
+          "label": "국내산 냉동 닭알집",
+          "price": 5000
+        },
+        {
+          "label": "국내산 냉동 닭내장",
+          "price": 8500
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
     },
     {
       "id": 6,
       "category_id": 2,
       "name": "닭목살",
-      "option": "1kg",
+      "option": "닭목살 1kg",
       "price": 6800,
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/neck-premium.webp"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/neck-premium.webp",
+      "options": [
+        {
+          "label": "닭목살 1kg",
+          "price": 6800
+        },
+        {
+          "label": "닭목살 1kg+매운양념소스 1팩",
+          "price": 10300
+        }
+      ],
+      "addons": [
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
     },
     {
       "id": 7,
       "category_id": 2,
       "name": "무뼈닭발 대용량",
-      "option": "2kg",
+      "option": "기본",
       "price": 22000,
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-feet-premium.webp"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-feet-premium.webp",
+      "options": [
+        {
+          "label": "기본",
+          "price": 22000
+        }
+      ],
+      "addons": [
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
     },
     {
       "id": 8,
       "category_id": 2,
       "name": "닭껍질 대용량",
-      "option": "10kg · 1kg × 10팩",
+      "option": "냉동 무염지 닭껍질 1kg 10팩",
       "price": 26000,
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/skin-premium.webp"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/skin-premium.webp",
+      "options": [
+        {
+          "label": "냉동 무염지 닭껍질 1kg 10팩",
+          "price": 26000
+        },
+        {
+          "label": "냉동 염지 닭껍질 1kg 10팩",
+          "price": 30000
+        }
+      ],
+      "addons": [
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
     },
     {
       "id": 9,
       "category_id": 2,
       "name": "생 닭껍질",
-      "option": "1kg 옵션",
+      "option": "냉동 무염지 닭껍질 1kg",
       "price": 2600,
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/skin-premium.webp"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/skin-premium.webp",
+      "options": [
+        {
+          "label": "냉동 무염지 닭껍질 1kg",
+          "price": 2600
+        },
+        {
+          "label": "냉동 무염지 닭껍질 1kg + 1kg",
+          "price": 5200
+        },
+        {
+          "label": "냉동 염지 닭껍질1kg",
+          "price": 3100
+        },
+        {
+          "label": "냉동 염지 닭껍질1kg + 1kg",
+          "price": 5600
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
     },
     {
       "id": 10,
@@ -110,33 +474,1201 @@
       "id": 11,
       "category_id": 2,
       "name": "닭가슴연골·오돌뼈",
-      "option": "1kg",
+      "option": "국내산 냉동 닭가슴연골 1kg",
       "price": 5500,
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/cartilage-premium.webp"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/cartilage-premium.webp",
+      "options": [
+        {
+          "label": "국내산 냉동 닭가슴연골 1kg",
+          "price": 5500
+        },
+        {
+          "label": "국내산 냉동 닭무릎연골 1kg",
+          "price": 6500
+        }
+      ],
+      "addons": [
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
     },
     {
       "id": 12,
       "category_id": 2,
       "name": "닭 안창살",
-      "option": "1kg",
+      "option": "닭안창살 1kg",
       "price": 8900,
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/inner-premium.webp"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/inner-premium.webp",
+      "options": [
+        {
+          "label": "닭안창살 1kg",
+          "price": 8900
+        },
+        {
+          "label": "닭안창살1kg+매운양념소스(300g)",
+          "price": 12700
+        }
+      ],
+      "addons": [
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
     },
     {
       "id": 13,
       "category_id": 2,
       "name": "손질 뼈닭발",
-      "option": "1kg",
+      "option": "냉동 손질뼈닭발 1kg",
       "price": 7000,
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/feet-premium.webp"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/feet-premium.webp",
+      "options": [
+        {
+          "label": "냉동 손질뼈닭발 1kg",
+          "price": 7000
+        },
+        {
+          "label": "냉동 튤립닭발 1kg",
+          "price": 11500
+        }
+      ],
+      "addons": [
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
     },
     {
       "id": 14,
       "category_id": 1,
       "name": "신선 닭가슴살",
-      "option": "소포장 선택 옵션",
+      "option": "냉동 닭가슴살 1kg / 1kg 1팩",
       "price": 6000,
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/chicken-breast-premium.webp"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/chicken-breast-premium.webp",
+      "options": [
+        {
+          "label": "냉동 닭가슴살 1kg / 1kg 1팩",
+          "price": 6000
+        },
+        {
+          "label": "냉동 닭가슴살 1kg / 500g 2팩",
+          "price": 6800
+        },
+        {
+          "label": "냉동 닭가슴살 1kg / 200g 5팩",
+          "price": 8700
+        },
+        {
+          "label": "냉장 닭가슴살 1kg / 1kg 1팩",
+          "price": 6500
+        },
+        {
+          "label": "냉장 닭가슴살 1kg / 500g 2팩",
+          "price": 7000
+        },
+        {
+          "label": "냉장 닭가슴살 1kg / 200g 5팩",
+          "price": 8700
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "category_id": 1,
+      "name": "닭안심·가슴살 소포장",
+      "option": "냉동 닭안심살 / 1kg x 10p (10kg)",
+      "price": 59000,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/chicken-breast-premium.webp",
+      "options": [
+        {
+          "label": "냉동 닭안심살 / 1kg x 10p (10kg)",
+          "price": 59000
+        },
+        {
+          "label": "냉동 닭안심살 / 1kg x 15p (15kg)",
+          "price": 84000
+        },
+        {
+          "label": "냉동 닭안심살 / 1kg x 5P (5kg)",
+          "price": 29500
+        },
+        {
+          "label": "냉동 닭안심살 / 500g x 10p (5kg)",
+          "price": 33000
+        },
+        {
+          "label": "냉동 닭안심살 / 200g x 25p (5kg)",
+          "price": 38000
+        },
+        {
+          "label": "냉동 닭안심살 / 500g x 20p (10kg)",
+          "price": 64000
+        },
+        {
+          "label": "냉동 닭안심살 / 200g x 50p (10kg)",
+          "price": 73500
+        },
+        {
+          "label": "냉장 닭안심살 / 1kg x 10p (10kg)",
+          "price": 59000
+        },
+        {
+          "label": "냉장 닭안심살 / 1kg x 5p (5kg)",
+          "price": 32000
+        },
+        {
+          "label": "냉장 닭안심살 / 500g x 10p (5kg)",
+          "price": 33000
+        },
+        {
+          "label": "냉장 닭안심살 / 200g x 25p (5kg)",
+          "price": 38000
+        },
+        {
+          "label": "냉장 닭안심살 / 5kg x 1p (5kg)",
+          "price": 31500
+        },
+        {
+          "label": "냉장 닭안심살 / 5kg x 2p (10kg)",
+          "price": 59000
+        },
+        {
+          "label": "냉장 닭안심살 / 5kg x 3p (15kg)",
+          "price": 89000
+        },
+        {
+          "label": "냉장 닭안심살 / 1kg x 15p (15kg)",
+          "price": 89500
+        },
+        {
+          "label": "냉장 닭안심살 / 500g x 20p (10kg)",
+          "price": 64000
+        },
+        {
+          "label": "냉장 닭안심살 / 200g x 50p (10kg)",
+          "price": 75000
+        },
+        {
+          "label": "냉동 닭가슴살 / 1kg x 10p (10kg)",
+          "price": 59000
+        },
+        {
+          "label": "냉동 닭가슴살 / 1kg x 15p (15kg)",
+          "price": 88500
+        },
+        {
+          "label": "냉동 닭가슴살 / 1kg x 5P (5kg)",
+          "price": 31000
+        },
+        {
+          "label": "냉동 닭가슴살 / 500g x 10p (5kg)",
+          "price": 34000
+        },
+        {
+          "label": "냉동 닭가슴살 / 200g x 25p (5kg)",
+          "price": 40500
+        },
+        {
+          "label": "냉동 닭가슴살 / 500g x 20p (10kg)",
+          "price": 65000
+        },
+        {
+          "label": "냉동 닭가슴살 / 200g x 50p (10kg)",
+          "price": 76000
+        },
+        {
+          "label": "냉장닭가슴살 / 1kg x 5P (5kg)",
+          "price": 32000
+        },
+        {
+          "label": "냉장닭가슴살 / 500g x 10p (5kg)",
+          "price": 34500
+        },
+        {
+          "label": "냉장닭가슴살 / 200g x 25p (5kg)",
+          "price": 42000
+        },
+        {
+          "label": "냉장닭가슴살 / 5kg x 1p (5kg)",
+          "price": 31500
+        },
+        {
+          "label": "냉장닭가슴살 / 5kg x 3p (15kg)",
+          "price": 90000
+        },
+        {
+          "label": "냉장닭가슴살 / 1kg x 15p (15kg)",
+          "price": 90000
+        },
+        {
+          "label": "냉장닭가슴살 / 500g x 20p (10kg)",
+          "price": 66000
+        },
+        {
+          "label": "냉장닭가슴살 / 200g x 50p (10kg)",
+          "price": 78500
+        },
+        {
+          "label": "냉장닭가슴살 / 1kg x 10p (10kg)",
+          "price": 62000
+        },
+        {
+          "label": "냉동 못난이 조각 닭가슴살 / 1kg x 10p (10kg)",
+          "price": 59000
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "category_id": 1,
+      "name": "신선 닭안심살",
+      "option": "냉동 닭안심 1kg / 1kg 1팩",
+      "price": 5900,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/chicken-breast-premium.webp",
+      "options": [
+        {
+          "label": "냉동 닭안심 1kg / 1kg 1팩",
+          "price": 5900
+        },
+        {
+          "label": "냉동 닭안심 1kg / 500g 2팩",
+          "price": 6600
+        },
+        {
+          "label": "냉동 닭안심 1kg / 200g 5팩",
+          "price": 7600
+        },
+        {
+          "label": "냉장 닭안심 1kg / 1kg 1팩",
+          "price": 6100
+        },
+        {
+          "label": "냉장 닭안심 1kg / 500g 2팩",
+          "price": 6700
+        },
+        {
+          "label": "냉장 닭안심 1kg / 200g 5팩",
+          "price": 7600
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "category_id": 3,
+      "name": "국내산 닭다리살",
+      "option": "냉동 닭 통정육 1kg / 무염지",
+      "price": 10500,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/domestic-thigh-skin-on-premium.webp",
+      "options": [
+        {
+          "label": "냉동 닭 통정육 1kg / 무염지",
+          "price": 10500
+        },
+        {
+          "label": "냉동 닭 통정육 1kg / 염지",
+          "price": 11000
+        },
+        {
+          "label": "냉장 닭 통정육 1kg / 무염지",
+          "price": 11000
+        },
+        {
+          "label": "냉장 닭 통정육 1kg / 염지",
+          "price": 11500
+        },
+        {
+          "label": "냉장 닭 절단정육 1kg / 무염지",
+          "price": 11500
+        },
+        {
+          "label": "냉장 닭 절단정육 1kg / 염지",
+          "price": 12000
+        },
+        {
+          "label": "냉장 사이정육 / 무염지",
+          "price": 11500
+        },
+        {
+          "label": "냉장 사이정육 / 염지",
+          "price": 12000
+        },
+        {
+          "label": "냉장 껍질제거 통정육 / 무염지",
+          "price": 13200
+        },
+        {
+          "label": "냉장 껍질제거 통정육 / 염지",
+          "price": 13500
+        },
+        {
+          "label": "냉동 닭 절단정육 / 무염지",
+          "price": 11000
+        },
+        {
+          "label": "냉동 닭 절단정육 / 염지",
+          "price": 11500
+        },
+        {
+          "label": "냉동 닭 사이정육 1kg / 무염지",
+          "price": 11000
+        },
+        {
+          "label": "냉동 닭 사이정육 1kg / 염지",
+          "price": 11500
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "category_id": 3,
+      "name": "브라질 순살 닭다리살",
+      "option": "수입 무염지 통정육 1kg x 1팩",
+      "price": 6500,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/boneless-thigh-skin-on-premium.webp",
+      "options": [
+        {
+          "label": "수입 무염지 통정육 1kg x 1팩",
+          "price": 6500
+        },
+        {
+          "label": "수입 무염지 통정육 2kg x 1팩",
+          "price": 12000
+        },
+        {
+          "label": "수입 염지 통정육 1kg x 1팩",
+          "price": 7000
+        },
+        {
+          "label": "수입 무염지 절단정육 1kg x 1팩",
+          "price": 7000
+        },
+        {
+          "label": "수입 염지 절단정육 1kg x 1팩",
+          "price": 7500
+        },
+        {
+          "label": "수입 껍질제거 무염통정육 1kg x 1팩",
+          "price": 8000
+        },
+        {
+          "label": "수입 껍질제거 염지통정육 1kg x 1팩",
+          "price": 8300
+        },
+        {
+          "label": "수입 껍질제거 무염 절단정육 1kg x 1팩",
+          "price": 8300
+        },
+        {
+          "label": "수입 껍질제거 염지 절단정육 1kg x 1팩",
+          "price": 8500
+        },
+        {
+          "label": "수입 염장 통정육 1kg x 1팩",
+          "price": 7000
+        },
+        {
+          "label": "수입 염장 절단정육 1kg x 1팩",
+          "price": 7500
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "category_id": 3,
+      "name": "닭봉·윙·통날개",
+      "option": "냉동 닭봉 1kg",
+      "price": 9500,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/wings-mix-premium.webp",
+      "options": [
+        {
+          "label": "냉동 닭봉 1kg",
+          "price": 9500
+        },
+        {
+          "label": "냉동 닭윙 1kg",
+          "price": 11000
+        },
+        {
+          "label": "냉동 윙봉 1kg",
+          "price": 11000
+        },
+        {
+          "label": "냉동 통날개 1kg",
+          "price": 11500
+        },
+        {
+          "label": "냉장 통날개 1kg",
+          "price": 12000
+        },
+        {
+          "label": "냉동 북채 1kg",
+          "price": 11500
+        },
+        {
+          "label": "냉장 북채 1kg",
+          "price": 12000
+        },
+        {
+          "label": "냉장 염지 통날개 1kg",
+          "price": 12500
+        },
+        {
+          "label": "냉장 염지 북채 1kg",
+          "price": 12500
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "category_id": 3,
+      "name": "브라질 통정육 대용량",
+      "option": "브라질무염통정육 2kg x 5팩",
+      "price": 60000,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/bulk-thigh-skin-on-premium.webp",
+      "options": [
+        {
+          "label": "브라질무염통정육 2kg x 5팩",
+          "price": 60000
+        },
+        {
+          "label": "브라질무염통정육 1kg x 10팩",
+          "price": 65000
+        },
+        {
+          "label": "브라질무염절단정육 1kg x 10팩",
+          "price": 68000
+        },
+        {
+          "label": "브라질염지통정육 1kg x 10팩",
+          "price": 70000
+        },
+        {
+          "label": "브라질염지절단정육 1kg x 10팩",
+          "price": 72000
+        },
+        {
+          "label": "브라질염지껍질제거통정육 1kg x 10팩",
+          "price": 78000
+        },
+        {
+          "label": "브라질염지껍질제거절단정육 1kg x 10팩",
+          "price": 80000
+        },
+        {
+          "label": "브라질무염껍질제거통정육 1kg x 10팩",
+          "price": 77000
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "category_id": 3,
+      "name": "냉장 장각 5조각",
+      "option": "국산 냉장 무염 장각(5조각 1팩)",
+      "price": 11500,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/whole-leg-five-premium.webp",
+      "options": [
+        {
+          "label": "국산 냉장 무염 장각(5조각 1팩)",
+          "price": 11500
+        },
+        {
+          "label": "국산 소금염지 장각(5조각 1팩)",
+          "price": 11800
+        },
+        {
+          "label": "국산 냉장 염지 장각(5조각 1팩)",
+          "price": 12000
+        },
+        {
+          "label": "국산 냉장 15호닭 무염 장각(5조각 1팩)",
+          "price": 12000
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "category_id": 3,
+      "name": "닭다리(북채)",
+      "option": "냉동 무염지 닭다리(북채) 1kg",
+      "price": 11000,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/chicken-drumsticks-premium.webp",
+      "options": [
+        {
+          "label": "냉동 무염지 닭다리(북채) 1kg",
+          "price": 11000
+        },
+        {
+          "label": "냉동 소금염지 닭다리(북채) 1kg",
+          "price": 11500
+        },
+        {
+          "label": "냉동 에어프라이어용 닭다리(북채) 1kg",
+          "price": 11700
+        },
+        {
+          "label": "냉장 무염지 닭다리(북채) 1kg",
+          "price": 11500
+        },
+        {
+          "label": "냉장 소금염지 닭다리(북채) 1kg",
+          "price": 11500
+        },
+        {
+          "label": "냉장 에어프라이어용 닭다리(북채) 1kg",
+          "price": 11700
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "category_id": 3,
+      "name": "냉장 장각 4조각",
+      "option": "냉장 무염 장각(4조각 1팩)",
+      "price": 10500,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/products/whole-leg-four-premium.webp",
+      "options": [
+        {
+          "label": "냉장 무염 장각(4조각 1팩)",
+          "price": 10500
+        },
+        {
+          "label": "냉장 소금염지 장각(4조각 1팩)",
+          "price": 10800
+        },
+        {
+          "label": "냉장 에어프라이어용염지 장각(4조각 1팩)",
+          "price": 11000
+        },
+        {
+          "label": "냉장 15호닭 무염 장각(4조각 1팩)",
+          "price": 11000
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "category_id": 4,
+      "name": "생 오리안심",
+      "option": "냉동 생오리안심 / 1kg",
+      "price": 10000,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/whole.png",
+      "options": [
+        {
+          "label": "냉동 생오리안심 / 1kg",
+          "price": 10000
+        },
+        {
+          "label": "냉장 생오리안심 / 1kg",
+          "price": 12000
+        }
+      ],
+      "addons": [
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "category_id": 4,
+      "name": "오리훈제",
+      "option": "훈제오리 슬라이스 800g",
+      "price": 10500,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/whole.png",
+      "options": [
+        {
+          "label": "훈제오리 슬라이스 800g",
+          "price": 10500
+        },
+        {
+          "label": "훈제오리 통마리 900g",
+          "price": 11400
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "category_id": 4,
+      "name": "통마리 생닭",
+      "option": "통마리 손질 생닭(2마리 1팩)",
+      "price": 9900,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/whole.png",
+      "options": [
+        {
+          "label": "통마리 손질 생닭(2마리 1팩)",
+          "price": 9900
+        },
+        {
+          "label": "통마리 소금염지 생닭(2마리 1팩)",
+          "price": 10400
+        },
+        {
+          "label": "통마리 에어프라이어용 양념염지 생닭(2마리 1팩)",
+          "price": 10900
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "category_id": 4,
+      "name": "닭도리육",
+      "option": "무염 닭도리육 1kg",
+      "price": 6900,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/whole.png",
+      "options": [
+        {
+          "label": "무염 닭도리육 1kg",
+          "price": 6900
+        },
+        {
+          "label": "소금염지 닭도리육 1kg",
+          "price": 7100
+        }
+      ],
+      "addons": [
+        {
+          "label": "매운소스(300g)",
+          "price": 3500
+        },
+        {
+          "label": "아이스팩",
+          "price": 500
+        },
+        {
+          "label": "매운소스(500g)",
+          "price": 5000
+        },
+        {
+          "label": "매운소스(1kg)",
+          "price": 9500
+        },
+        {
+          "label": "숯불바베큐맛소스(300g)",
+          "price": 4000
+        },
+        {
+          "label": "숯불바베큐맛소스(500g)",
+          "price": 6000
+        },
+        {
+          "label": "숯불바베큐맛소스(1kg)",
+          "price": 9900
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "category_id": 4,
+      "name": "삼계탕용 생닭",
+      "option": "삼계탕용 손질 통마리 두마리 포장",
+      "price": 9900,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/whole.png",
+      "options": [
+        {
+          "label": "삼계탕용 손질 통마리 두마리 포장",
+          "price": 9900
+        },
+        {
+          "label": "생닭 손질 두마리 포장(배가른생닭)",
+          "price": 9900
+        }
+      ],
+      "addons": [
+        {
+          "label": "삼계탕용약재",
+          "price": 3000
+        },
+        {
+          "label": "아이스팩",
+          "price": 500
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "category_id": 4,
+      "name": "오리안심 대용량",
+      "option": "냉동생오리안심 15킬로(1kg x 15팩)",
+      "price": 148000,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/whole.png",
+      "options": [
+        {
+          "label": "냉동생오리안심 15킬로(1kg x 15팩)",
+          "price": 148000
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "category_id": 5,
+      "name": "소대패목살",
+      "option": "기본",
+      "price": 11500,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/beef.png",
+      "options": [
+        {
+          "label": "기본",
+          "price": 11500
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "category_id": 5,
+      "name": "우삼겹 돌돌이",
+      "option": "기본",
+      "price": 8400,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/beef.png",
+      "options": [
+        {
+          "label": "기본",
+          "price": 8400
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "category_id": 6,
+      "name": "목전지",
+      "option": "기본",
+      "price": 3200,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/pork.png",
+      "options": [
+        {
+          "label": "기본",
+          "price": 3200
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "category_id": 6,
+      "name": "대패삼겹살",
+      "option": "기본",
+      "price": 5900,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/pork.png",
+      "options": [
+        {
+          "label": "기본",
+          "price": 5900
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "category_id": 6,
+      "name": "대패목살말이",
+      "option": "기본",
+      "price": 7900,
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/pork.png",
+      "options": [
+        {
+          "label": "기본",
+          "price": 7900
+        }
+      ],
+      "addons": [
+        {
+          "label": "아이스팩",
+          "price": 500
+        }
+      ]
     }
   ],
   "all_category_image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/all.png"

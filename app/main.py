@@ -261,7 +261,7 @@ class ProductUpdateIn(BaseModel):
     category_id: int = Field(gt=0)
     active: bool = True
     image: Optional[str] = Field(default=None, max_length=500)
-    options: List[OptionIn] = Field(min_length=1, max_length=30)
+    options: List[OptionIn] = Field(min_length=1, max_length=80)
     addons: List[AddonIn] = Field(default_factory=list, max_length=30)
 
     @field_validator('name')
