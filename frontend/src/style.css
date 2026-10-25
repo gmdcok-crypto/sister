@@ -2,6 +2,7 @@
 .option-pick{display:block;margin:0 0 10px;font-size:14px;color:#555}.option-pick select{width:100%;margin-top:4px;border:1px solid #e2b8a2;border-radius:12px;padding:8px 10px;background:#fff}.addon-pick{display:grid;gap:6px;margin:0 0 10px}.addon-check{display:flex;align-items:center;gap:6px;font-size:13px;color:#555}.addon-check input{width:auto;accent-color:#ff633e}.addon-check span{color:#ff633e}.cart-addons{font-size:13px;color:#666}
 .product-card{cursor:pointer}
 .card-option{margin:0 0 8px;color:#666;font-size:14px}
+.card-desc,.detail-desc{margin:0 0 8px;color:#666;font-size:14px;line-height:1.45}
 .product-view{padding:12px 0 48px}
 .detail-back{background:transparent;color:#555;padding:8px 0;margin-bottom:12px}
 .detail-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:36px;align-items:start}

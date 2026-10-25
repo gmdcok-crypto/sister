@@ -58,6 +58,14 @@ def ensure_order_tracking_column():
     )
 
 
+def ensure_product_description_column():
+    _add_column_if_missing(
+        'products',
+        'description',
+        "ALTER TABLE products ADD COLUMN description VARCHAR(300) NOT NULL DEFAULT ''",
+    )
+
+
 def ensure_user_admin_columns():
     _add_column_if_missing(
         'users',
@@ -175,6 +183,7 @@ def main():
     ensure_order_item_option_column()
     ensure_order_user_column()
     ensure_order_tracking_column()
+    ensure_product_description_column()
     ensure_user_admin_columns()
     catalog = json.loads((Path(__file__).parents[1] / 'catalog.json').read_text(encoding='utf-8'))
     with SessionLocal() as session:
@@ -196,6 +205,8 @@ def main():
             product = session.get(Product, item['id'])
             if product is None:
                 product = Product(**payload)
+            if item.get('description'):
+                product.description = item['description']
                 session.add(product)
                 session.flush()
             else:
@@ -204,6 +215,8 @@ def main():
                 product.option = payload.get('option') or product.option
                 product.price = payload['price']
                 product.image = payload['image']
+                if 'description' in item:
+                    product.description = item.get('description') or ''
                 product.active = True
             sync_catalog_choices(session, product, item)
         session.flush()

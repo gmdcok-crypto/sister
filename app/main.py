@@ -67,6 +67,7 @@ class Product(Base):
     category_id: Mapped[int] = mapped_column(ForeignKey('categories.id'))
     name: Mapped[str] = mapped_column(String(200))
     option: Mapped[str] = mapped_column(String(200), default='')
+    description: Mapped[str] = mapped_column(String(300), default='')
     price: Mapped[int] = mapped_column(Integer)
     image: Mapped[str] = mapped_column(String(500))
     active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -192,6 +193,7 @@ class ProductOut(BaseModel):
     category_id: int
     name: str
     option: str
+    description: str = ''
     price: int
     image: str
     options: List[OptionOut] = []
@@ -426,6 +428,7 @@ def serialize_product(session: Session, product: Product) -> ProductOut:
         category_id=product.category_id,
         name=product.name,
         option=option_label,
+        description=product.description or '',
         price=price,
         image=product.image,
         options=opts_out,

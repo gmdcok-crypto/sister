@@ -126,7 +126,7 @@ function addonSelect(p,optionId){const list=addonsFor(p,optionId);if(!list.lengt
 function selectedAddonIds(root){return [...(root?.querySelectorAll('[data-addon-id]:checked')||[])].map(el=>+el.value)}
 function currentOptionId(root,p){const el=root.querySelector('[data-option-for]');return el?+el.value:opts(p)[0].id}
 
-function renderGrid(){const filtered=products.filter(p=>(!selected||p.category_id===selected)&&p.name.includes(search));document.querySelector('#title').textContent=categories.find(c=>c.id===selected)?.name||'전체상품';document.querySelector('#results').textContent=filtered.length+'개 상품';document.querySelector('#grid').innerHTML=filtered.length?filtered.map(p=>{const first=opts(p)[0];const more=opts(p).length>1||(p.addons||[]).length;return `<article class="product-card" data-open-product="${p.id}" tabindex="0" role="link" aria-label="${esc(p.name)} 상세 보기">${image(p)}<h3>${esc(p.name)}</h3><p class="card-option">${esc(first.label)}${more?' 외':''}</p><div class="price"><strong>${won(first.price)}${more?'~':''}</strong><button type="button" data-open-product="${p.id}">자세히</button></div></article>`}).join(''):'<p class="empty">등록된 상품이 없습니다.</p>';document.querySelectorAll('[data-category]').forEach(e=>e.classList.toggle('active',+e.dataset.category===selected))}
+function renderGrid(){const filtered=products.filter(p=>(!selected||p.category_id===selected)&&p.name.includes(search));document.querySelector('#title').textContent=categories.find(c=>c.id===selected)?.name||'전체상품';document.querySelector('#results').textContent=filtered.length+'개 상품';document.querySelector('#grid').innerHTML=filtered.length?filtered.map(p=>{const first=opts(p)[0];const more=opts(p).length>1||(p.addons||[]).length;return `<article class="product-card" data-open-product="${p.id}" tabindex="0" role="link" aria-label="${esc(p.name)} 상세 보기">${image(p)}<h3>${esc(p.name)}</h3>${p.description?`<p class="card-desc">${esc(p.description)}</p>`:''}${(first.label&&first.label!=='기본')||more?`<p class="card-option">${esc(first.label)}${more?' 외':''}</p>`:''}<div class="price"><strong>${won(first.price)}${more?'~':''}</strong><button type="button" data-open-product="${p.id}">자세히</button></div></article>`}).join(''):'<p class="empty">등록된 상품이 없습니다.</p>';document.querySelectorAll('[data-category]').forEach(e=>e.classList.toggle('active',+e.dataset.category===selected))}
 
 function renderDetail(){
   const view=document.querySelector('#product-view');
@@ -141,6 +141,7 @@ function renderDetail(){
       <div class="detail-info">
         <p class="detail-cat">${esc(cat?.name||'')}</p>
         <h1>${esc(p.name)}</h1>
+        ${p.description?`<p class="detail-desc">${esc(p.description)}</p>`:''}
         <p class="detail-price"><strong data-price>${won(first.price)}</strong></p>
         <div class="detail-fields">
           <p class="detail-label">옵션</p>
