@@ -6,7 +6,7 @@
     },
     {
       "name": "특수부위",
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/special.png"
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/special-feet.png"
     },
     {
       "name": "윙·봉·닭다리살",
@@ -1677,5 +1677,5 @@
       "description": "돼지고기 대패목살말이 500g"
     }
   ],
-  "all_category_image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/all.png"
+  "all_category_image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/all-chicken.png"
 }
