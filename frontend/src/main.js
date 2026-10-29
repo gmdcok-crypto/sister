@@ -34,8 +34,8 @@ async function request(path,options={}){
 
 const LOGO='https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/unnine-logo-transparent.webp?v=1';
 
-document.querySelector('#app').innerHTML=`<header><div class="top"><a href="#/" class="logo" aria-label="언니네닭 홈"><img src="${LOGO}" alt="언니네닭"></a><form id="search"><input aria-label="상품 검색" placeholder="어떤 상품을 찾으세요?"><button>검색</button></form><button type="button" id="orders-btn" class="account-btn">주문내역</button><button type="button" id="account-btn" class="account-btn">로그인</button><button id="cart-open">장바구니 <span id="count">0</span></button></div></header><main>
-<section id="home-view"><section class="hero" aria-label="메인 소개"><img class="hero-bg" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-premium-fresh.webp?v=1" alt="" decoding="async"><div class="hero-copy"><p class="accent">우리 집 식탁을 위한 장보기</p><h1>맛있는 선택,<br>언니네닭에서.</h1><p>닭고기부터 다양한 육류까지. 필요한 상품을 편리하게 만나보세요.</p><button id="browse">상품 둘러보기</button></div></section><div class="category-nav-wrap"><nav id="nav" class="category-nav" aria-label="상품 카테고리"></nav><span class="category-nav-hint" aria-hidden="true">›</span></div><section id="catalog"><div class="title"><h2 id="title">전체상품</h2><span id="results" aria-live="polite"></span></div><p id="error" role="alert"></p><div id="grid" class="grid"></div></section></section>
+document.querySelector('#app').innerHTML=`<header class="${parseRoute().view==='home'?'home-mode':''}"><div class="top"><a href="#/" class="logo" aria-label="언니네닭 홈"><img src="${LOGO}" alt="언니네닭"></a><form id="search"><input aria-label="상품 검색" placeholder="어떤 상품을 찾으세요?"><button>검색</button></form><div class="top-actions"><button type="button" id="orders-btn" class="account-btn">주문내역</button><button type="button" id="account-btn" class="account-btn">로그인</button><button id="cart-open">장바구니 <span id="count">0</span></button></div></div></header><main>
+<section id="home-view"><section class="hero" aria-label="메인 소개"><img class="hero-bg" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-premium-fresh.webp?v=1" alt="" decoding="async"><a href="#/" class="hero-logo" aria-label="언니네닭 홈"><img src="${LOGO}" alt="언니네닭"></a><div class="hero-copy"><p class="accent">우리 집 식탁을 위한 장보기</p><h1>맛있는 선택,<br>언니네닭에서.</h1><p>닭고기부터 다양한 육류까지. 필요한 상품을 편리하게 만나보세요.</p><button id="browse">상품 둘러보기</button></div></section><div class="category-nav-wrap"><nav id="nav" class="category-nav" aria-label="상품 카테고리"></nav><span class="category-nav-hint" aria-hidden="true">›</span></div><section id="catalog"><div class="title"><h2 id="title">전체상품</h2><span id="results" aria-live="polite"></span></div><p id="error" role="alert"></p><div id="grid" class="grid"></div></section></section>
 <section id="product-view" class="product-view" hidden></section>
 <section id="auth-view" class="auth-view" hidden></section>
 <section id="mypage-view" class="mypage-view" hidden></section>
@@ -362,6 +362,7 @@ function showView(){
   const mypage=document.querySelector('#mypage-view');
   const header=document.querySelector('header');
   const footer=document.querySelector('footer');
+  header.classList.remove('home-mode');
   if(authView){
     home.hidden=true;product.hidden=true;auth.hidden=false;mypage.hidden=true;
     header.classList.add('auth-mode');footer.classList.add('auth-mode');
@@ -380,7 +381,7 @@ function showView(){
     renderDetail();window.scrollTo({top:0,behavior:'smooth'});
   }else{
     home.hidden=false;product.hidden=true;auth.hidden=true;mypage.hidden=true;
-    header.classList.remove('auth-mode');footer.classList.remove('auth-mode');
+    header.classList.remove('auth-mode');footer.classList.remove('auth-mode');header.classList.add('home-mode');
     renderGrid();updateCategoryHint();
   }
 }
