@@ -81,11 +81,12 @@ def ensure_user_admin_columns():
 
 def category_rows(catalog):
     rows = []
+    # List order is the menu order; ids stay fixed because products reference them.
     for i, item in enumerate(catalog['categories'], 1):
         if isinstance(item, str):
             rows.append({'id': i, 'name': item, 'image': '', 'position': i})
         else:
-            rows.append({'id': i, 'name': item['name'], 'image': item.get('image', ''), 'position': i})
+            rows.append({'id': item.get('id', i), 'name': item['name'], 'image': item.get('image', ''), 'position': i})
     return rows
 
 

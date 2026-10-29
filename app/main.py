@@ -785,7 +785,8 @@ def products(category_id: Optional[int] = None, q: str = '', session: Session = 
         stmt = stmt.where(Product.category_id == category_id)
     if q:
         stmt = stmt.where(Product.name.contains(q[:100], autoescape=True))
-    rows = list(session.scalars(stmt.order_by(Product.id).limit(200)))
+    stmt = stmt.outerjoin(Category, Category.id == Product.category_id)
+    rows = list(session.scalars(stmt.order_by(Category.position, Product.id).limit(200)))
     return [serialize_product(session, p) for p in rows]
 
 

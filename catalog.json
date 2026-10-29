@@ -1,26 +1,32 @@
 {
   "categories": [
     {
+      "id": 1,
       "name": "닭가슴살·닭안심살",
       "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/breast.png"
     },
     {
-      "name": "특수부위",
-      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/special-feet.png"
-    },
-    {
+      "id": 3,
       "name": "윙·봉·닭다리살",
       "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/wing.png"
     },
     {
+      "id": 4,
       "name": "닭한마리·오리고기",
       "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/whole.png"
     },
     {
+      "id": 2,
+      "name": "특수부위",
+      "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/special-feet.png"
+    },
+    {
+      "id": 5,
       "name": "소고기",
       "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/beef.png"
     },
     {
+      "id": 6,
       "name": "돼지고기",
       "image": "https://pub-236307febd5647328aae37b69df5373d.r2.dev/categories/pork.png"
     }
