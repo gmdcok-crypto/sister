@@ -690,6 +690,7 @@ async function init(){
     let allImage='';
     let cfg;
     [categories,products,cfg]=await Promise.all([request('/api/categories'),request('/api/products'),request('/api/config')]);
+    {const rank=new Map(categories.map((c,i)=>[c.id,i]));products.sort((a,b)=>(rank.get(a.category_id)??1e9)-(rank.get(b.category_id)??1e9)||a.id-b.id)}
     enabled=cfg.orders_enabled;allImage=cfg.all_category_image||'';social=cfg.social||social;
     if(getToken()){
       try{authUser=await request('/api/auth/me')}catch{clearAuth()}

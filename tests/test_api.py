@@ -72,6 +72,34 @@ def test_catalog():
     assert client.get('/api/products?category_id=3').json() == []
 
 
+def test_catalog_category_order_keeps_ids():
+    import json
+    from app.seed import category_rows
+
+    catalog = json.loads((Path(__file__).parents[1] / 'catalog.json').read_text(encoding='utf-8'))
+    rows = category_rows(catalog)
+    assert [r['name'] for r in rows][:4] == ['닭가슴살·닭안심살', '윙·봉·닭다리살', '닭한마리·오리고기', '특수부위']
+    assert {r['name']: r['id'] for r in rows}['특수부위'] == 2
+    assert [r['position'] for r in rows] == list(range(1, len(rows) + 1))
+
+
+def test_products_follow_category_order():
+    with SessionLocal() as s:
+        s.add(Category(id=90, name='앞', image='', position=-1))
+        s.flush()
+        s.add(Product(id=900, category_id=90, name='앞상품', option='', price=1000, image=''))
+        s.commit()
+    try:
+        ids = [p['id'] for p in client.get('/api/products').json()]
+        assert ids.index(900) < ids.index(1)
+    finally:
+        with SessionLocal() as s:
+            s.query(ProductOption).filter(ProductOption.product_id == 900).delete()
+            s.query(Product).filter(Product.id == 900).delete()
+            s.query(Category).filter(Category.id == 90).delete()
+            s.commit()
+
+
 def test_server_prices_and_duplicate_lines():
     oid = option_id('500g')
     data = payload(
