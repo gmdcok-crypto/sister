@@ -53,8 +53,17 @@ function parseRoute(){
 }
 function goHome(){location.hash='#/'}
 function goProduct(id){location.hash=`#/product/${id}`}
-function goLogin(){location.hash='#/login'}
-function goSignup(){location.hash='#/signup'}
+function goLogin(){
+  // 비회원 고정 시 헤더가 로그인으로 안 열리는 문제 방지
+  if(isGuest())clearGuest();
+  updateAccountUI();
+  location.hash='#/login';
+}
+function goSignup(){
+  if(isGuest())clearGuest();
+  updateAccountUI();
+  location.hash='#/signup';
+}
 function goMypage(){location.hash='#/mypage'}
 function formatWhen(value){
   if(!value) return '';
@@ -326,8 +335,9 @@ function renderMypage(){
       </section>
     `:`
       <div class="mypage-actions">
-        <button type="button" data-go-login>로그인하고 내 주문 보기</button>
+        <button type="button" data-go-login>회원 로그인</button>
         <button type="button" class="account-btn" data-go-signup>회원가입</button>
+        ${isGuest()?`<button type="button" class="account-btn" data-exit-guest>비회원 종료</button>`:''}
       </div>
       <form id="lookup-form" class="lookup-form">
         <h2>비회원 주문 조회</h2>
@@ -619,7 +629,8 @@ document.querySelector('.logo').addEventListener('click',e=>{e.preventDefault();
 document.querySelector('#orders-btn').onclick=()=>goMypage();
 document.querySelector('#account-btn').onclick=async ()=>{
   const mode=document.querySelector('#account-btn').dataset.mode;
-  if(mode==='user'||mode==='guest'){goMypage();return}
+  if(mode==='user'){goMypage();return}
+  // 비회원 상태에선 회원 로그인으로 바로 이동 (마이페이지만 반복 진입되던 문제 방지)
   goLogin();
 };
 
@@ -627,6 +638,9 @@ document.querySelector('#mypage-view').addEventListener('click',async e=>{
   if(e.target.closest('[data-back-home]')){goHome();return}
   if(e.target.closest('[data-go-login]')){goLogin();return}
   if(e.target.closest('[data-go-signup]')){goSignup();return}
+  if(e.target.closest('[data-exit-guest]')){
+    clearGuest();updateAccountUI();goLogin();return;
+  }
   if(e.target.closest('[data-logout]')){
     try{await request('/api/auth/logout',{method:'POST'})}catch{}
     clearAuth();lookupOrder=null;myOrders=[];savedAddresses=[];selectedAddressId=null;addressFormMode='list';editingAddressId=null;renderMypage();
