@@ -945,7 +945,7 @@ def order(data: OrderIn, session: Session = Depends(db), user: Optional[User] = 
             'store_id': settings.portone_store_id.strip(),
             'channel_key': settings.portone_channel_key_card.strip(),
             'pay_method': 'CARD',
-            'currency': 'CURRENCY_KRW',
+            'currency': 'KRW',
         }
     return body
 
