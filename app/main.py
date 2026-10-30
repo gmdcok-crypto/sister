@@ -585,7 +585,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[x.strip() for x in settings.cors_origins.split(',') if x.strip()],
     allow_methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allow_headers=['Content-Type', 'X-Admin-Key'],
+    # Authorization 없으면 로그인/마이페이지/주문 API가 브라우저에서 Failed to fetch 로 막힘
+    allow_headers=['Authorization', 'Content-Type', 'X-Admin-Key', 'Accept'],
 )
 
 
