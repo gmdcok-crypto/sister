@@ -106,6 +106,16 @@ header.auth-mode,footer.auth-mode{display:none}
 .addr-card-top em{font-style:normal;font-size:12px;font-weight:700;color:#c2410c;background:#ffe8df;padding:2px 7px;border-radius:999px}
 .addr-card-line{color:#666;line-height:1.45}
 .address-fields.is-locked input:not([type=checkbox]){background:#f7f4f1;color:#444}
+.addr-search-block{display:grid;gap:10px}
+.addr-zip-label{display:block;font-size:14px}
+.addr-zip-row{display:flex;gap:8px;align-items:center;margin-top:4px}
+.addr-zip-row input{flex:1;min-width:0}
+.addr-zip-row .account-btn{flex-shrink:0;white-space:nowrap}
+.address-fields .addr-search-block label,.addr-edit-form .addr-search-block label{display:block;font-size:14px}
+.address-fields .addr-search-block input:not([type=checkbox]),.addr-edit-form .addr-search-block input:not([type=checkbox]){display:block;width:100%;margin-top:4px;border:1px solid #e2b8a2;border-radius:12px;padding:10px 12px}
+.address-fields .addr-zip-row input{margin-top:0}
+.addr-edit-form .addr-zip-row input{margin-top:0}
+.address-fields.is-locked [data-postcode-search]{display:none}
 @media(max-width:640px){
   .my-order-head{flex-direction:column}
   .my-order-badges{justify-items:start}

@@ -40,7 +40,7 @@ document.querySelector('#app').innerHTML=`<header class="${parseRoute().view==='
 <section id="product-view" class="product-view" hidden></section>
 <section id="auth-view" class="auth-view" hidden></section>
 <section id="mypage-view" class="mypage-view" hidden></section>
-</main><footer>언니네닭 <p>상품·가격은 제공된 캡처를 바탕으로 등록한 초기 자료입니다. 상품 사진은 AI로 제작한 연출 이미지입니다.</p></footer><dialog id="cart"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><div id="address-book" class="address-book" hidden></div><div id="address-fields" class="address-fields"><label class="addr-label-field" hidden>배송지명<input name="label" maxlength="40" placeholder="예: 집, 회사" autocomplete="off"></label><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><label>배송 주소<input name="address" required minlength="5" maxlength="500" autocomplete="street-address"></label><label class="check-row" id="save-address-wrap" hidden><input type="checkbox" id="save-address"> 이 배송지를 주소록에 저장</label></div><p id="checkout-note">주문 접수 후 카드 결제를 진행합니다. 배송비는 별도 안내될 수 있습니다.</p><button id="submit" type="submit">주문 접수</button><p id="order-message" role="status"></p></form></dialog>`;
+</main><footer>언니네닭 <p>상품·가격은 제공된 캡처를 바탕으로 등록한 초기 자료입니다. 상품 사진은 AI로 제작한 연출 이미지입니다.</p></footer><dialog id="cart"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><div id="address-book" class="address-book" hidden></div><div id="address-fields" class="address-fields"><label class="addr-label-field" hidden>배송지명<input name="label" maxlength="40" placeholder="예: 집, 회사" autocomplete="off"></label><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><div class="addr-search-block"><label class="addr-zip-label">우편번호<span class="addr-zip-row"><input name="zonecode" readonly maxlength="10" placeholder="우편번호" autocomplete="postal-code"><button type="button" class="account-btn" data-postcode-search>주소찾기</button></span></label><label>기본 주소<input name="address_base" readonly required minlength="5" maxlength="400" placeholder="주소찾기로 검색해 주세요" autocomplete="street-address"></label><label>상세 주소<input name="address_detail" maxlength="200" placeholder="동·호수 등 상세주소" autocomplete="address-line2"></label><input type="hidden" name="address" value=""></div><label class="check-row" id="save-address-wrap" hidden><input type="checkbox" id="save-address"> 이 배송지를 주소록에 저장</label></div><p id="checkout-note">주문 접수 후 카드 결제를 진행합니다. 배송비는 별도 안내될 수 있습니다.</p><button id="submit" type="submit">주문 접수</button><p id="order-message" role="status"></p></form></dialog>`;
 
 function persist(){localStorage.setItem('unnine-cart',JSON.stringify(cart));document.querySelector('#count').textContent=cart.reduce((n,x)=>n+x.quantity,0)}
 function parseRoute(){
@@ -203,11 +203,62 @@ async function loadAddresses(){
   }
 }
 
+
+function composeAddress(zone, base, detail){
+  const parts=[];
+  if(zone) parts.push(`[${String(zone).trim()}]`);
+  if(base) parts.push(String(base).trim());
+  if(detail) parts.push(String(detail).trim());
+  return parts.join(' ').trim();
+}
+function syncAddressHidden(root){
+  if(!root)return '';
+  const zone=root.querySelector('[name=zonecode]')?.value||'';
+  const base=root.querySelector('[name=address_base]')?.value||'';
+  const detail=root.querySelector('[name=address_detail]')?.value||'';
+  const composed=composeAddress(zone,base,detail);
+  const hidden=root.querySelector('input[name=address]');
+  if(hidden) hidden.value=composed;
+  return composed;
+}
+function applyPostcodeResult(root, data){
+  if(!root)return;
+  const zone=root.querySelector('[name=zonecode]');
+  const base=root.querySelector('[name=address_base]');
+  const detail=root.querySelector('[name=address_detail]');
+  if(zone) zone.value=data.zonecode||'';
+  if(base) base.value=data.address||'';
+  syncAddressHidden(root);
+  if(detail){detail.focus();detail.select?.()}
+}
+function openKakaoPostcode(onComplete){
+  if(!window.daum?.Postcode){
+    alert('주소 검색 서비스를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    return;
+  }
+  new daum.Postcode({
+    oncomplete(data){
+      let addr=data.userSelectedType==='R'?data.roadAddress:data.jibunAddress;
+      if(!addr) addr=data.address||'';
+      let extra='';
+      if(data.userSelectedType==='R'){
+        if(data.bname&&/[동로가]$/g.test(data.bname)) extra+=data.bname;
+        if(data.buildingName&&data.apartment==='Y') extra+=(extra?', ':'')+data.buildingName;
+        if(extra) addr+=` (${extra})`;
+      }
+      onComplete({zonecode:data.zonecode||'', address:addr});
+    },
+  }).open();
+}
+
 function fillOrderAddress(a){
   const form=document.querySelector('#order');
   if(!form)return;
   form.customer_name.value=a?.recipient_name||authUser?.name||'';
   form.phone.value=a?.phone||authUser?.phone||'';
+  if(form.zonecode) form.zonecode.value='';
+  if(form.address_base) form.address_base.value=a?.address||'';
+  if(form.address_detail) form.address_detail.value='';
   form.address.value=a?.address||'';
   if(form.label) form.label.value=a?.label||'';
 }
@@ -218,8 +269,12 @@ function setAddressFieldsLocked(locked){
   fields.classList.toggle('is-locked',!!locked);
   fields.querySelectorAll('input:not([type=checkbox])').forEach(el=>{
     if(el.name==='label'){el.disabled=!!locked;return}
+    if(el.name==='address_detail'){el.readOnly=!!locked;return}
+    if(el.name==='zonecode'||el.name==='address_base'){el.readOnly=true;return}
+    if(el.name==='address')return;
     el.readOnly=!!locked;
   });
+  fields.querySelectorAll('[data-postcode-search]').forEach(btn=>{btn.disabled=!!locked;btn.hidden=!!locked});
 }
 
 function renderAddressBook(){
@@ -254,7 +309,7 @@ function renderAddressBook(){
       <button type="button" class="account-btn" data-addr-new>+ 새 배송지</button>
     </div>
     <div class="addr-card-list">${cards||'<p class="muted">저장된 배송지가 없습니다. 아래에서 추가해 주세요.</p>'}</div>
-    ${savedAddresses.length?`<label class="addr-card${isNew?' is-selected':''}"><input type="radio" name="address_pick" value="new" ${isNew?'checked':''}><span class="addr-card-body"><strong>새 배송지 입력</strong><span class="muted">받는 분·연락처·주소를 직접 입력합니다.</span></span></label>`:''}
+    ${savedAddresses.length?`<label class="addr-card${isNew?' is-selected':''}"><input type="radio" name="address_pick" value="new" ${isNew?'checked':''}><span class="addr-card-body"><strong>새 배송지 입력</strong><span class="muted">받는 분·연락처를 입력하고 주소찾기로 검색합니다.</span></span></label>`:''}
   `;
   if(labelField)labelField.hidden=!isNew;
   if(saveWrap){
@@ -298,7 +353,7 @@ function addressEditorHtml(a){
     <label>배송지명<input name="label" required maxlength="40" value="${esc(a?.label||'')}" placeholder="예: 집, 회사"></label>
     <label>받는 분<input name="recipient_name" required maxlength="100" value="${esc(a?.recipient_name||authUser?.name||'')}"></label>
     <label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" value="${esc(a?.phone||authUser?.phone||'')}"></label>
-    <label>배송 주소<input name="address" required minlength="5" maxlength="500" value="${esc(a?.address||'')}"></label>
+    <div class="addr-search-block"><label class="addr-zip-label">우편번호<span class="addr-zip-row"><input name="zonecode" readonly maxlength="10" placeholder="우편번호" value="" autocomplete="postal-code"><button type="button" class="account-btn" data-postcode-search>주소찾기</button></span></label><label>기본 주소<input name="address_base" readonly required minlength="5" maxlength="400" placeholder="주소찾기로 검색해 주세요" value="${esc(a?.address||'')}" autocomplete="street-address"></label><label>상세 주소<input name="address_detail" maxlength="200" placeholder="동·호수 등 상세주소" value="" autocomplete="address-line2"></label><input type="hidden" name="address" value="${esc(a?.address||'')}"></div>
     <label class="check-row"><input type="checkbox" name="is_default" ${!a||a.is_default?'checked':''}> 기본 배송지로 설정</label>
     <div class="addr-edit-actions">
       <button type="submit">${a?'저장':'등록'}</button>
@@ -653,6 +708,11 @@ document.querySelector('#mypage-view').addEventListener('click',async e=>{
   if(e.target.closest('[data-addr-cancel]')){
     addressFormMode='list';editingAddressId=null;renderMypage();return;
   }
+  if(e.target.closest('[data-postcode-search]')){
+    const form=e.target.closest('#addr-edit-form');
+    if(form) openKakaoPostcode(data=>applyPostcodeResult(form, data));
+    return;
+  }
   const editBtn=e.target.closest('[data-addr-edit]');
   if(editBtn){
     addressFormMode='edit';editingAddressId=+editBtn.dataset.addrEdit;renderMypage();return;
@@ -676,16 +736,24 @@ document.querySelector('#mypage-view').addEventListener('click',async e=>{
     }catch(error){alert(error.message)}
   }
 });
+document.querySelector('#mypage-view').addEventListener('input',e=>{
+  if(!e.target.closest('#addr-edit-form'))return;
+  if(e.target.name==='address_detail'||e.target.name==='address_base'||e.target.name==='zonecode'){
+    syncAddressHidden(e.target.closest('#addr-edit-form'));
+  }
+});
 document.querySelector('#mypage-view').addEventListener('submit',async e=>{
   if(e.target.id==='addr-edit-form'){
     e.preventDefault();
     const msg=document.querySelector('#addr-edit-msg');
+    const address=syncAddressHidden(e.target);
+    if(address.length<5){msg.textContent='주소찾기로 배송 주소를 입력해 주세요.';return}
     const fd=new FormData(e.target);
     const body={
       label:String(fd.get('label')||'').trim()||'기본',
       recipient_name:String(fd.get('recipient_name')||'').trim(),
       phone:String(fd.get('phone')||'').trim(),
-      address:String(fd.get('address')||'').trim(),
+      address,
       is_default:fd.get('is_default')==='on',
     };
     const editId=e.target.dataset.editId;
@@ -737,6 +805,17 @@ document.querySelector('#cart-open').onclick=()=>{openCart()};
 document.querySelector('#cart-close').onclick=()=>document.querySelector('#cart').close();
 document.querySelector('#cart-lines').addEventListener('click',e=>{if(e.target.dataset.removeIndex==null)return;cart.splice(+e.target.dataset.removeIndex,1);persist();cartRender()});
 document.querySelector('#cart-lines').addEventListener('change',e=>{if(e.target.dataset.quantityIndex==null)return;const line=cart[+e.target.dataset.quantityIndex];if(!line)return;line.quantity=Math.max(1,Math.min(100,Math.trunc(+e.target.value)||1));persist();cartRender()});
+document.querySelector('#order').addEventListener('input',e=>{
+  if(e.target.name==='address_detail'||e.target.name==='address_base'||e.target.name==='zonecode'){
+    syncAddressHidden(e.target.form||document.querySelector('#order'));
+  }
+});
+document.querySelector('#order').addEventListener('click',e=>{
+  if(!e.target.closest('[data-postcode-search]'))return;
+  const fields=document.querySelector('#address-fields');
+  if(fields?.classList.contains('is-locked'))return;
+  openKakaoPostcode(data=>applyPostcodeResult(document.querySelector('#order'), data));
+});
 document.querySelector('#order').addEventListener('change',e=>{
   if(e.target.name!=='address_pick')return;
   selectedAddressId=e.target.value==='new'?'new':+e.target.value;
@@ -760,10 +839,15 @@ document.querySelector('#order').onsubmit=async e=>{
   const button=document.querySelector('#submit'),message=document.querySelector('#order-message');
   button.disabled=true;message.textContent=payment.card_enabled?'결제 준비 중…':'주문 접수 중…';
   try{
+    const address=syncAddressHidden(e.target);
+    if(address.length<5){
+      message.textContent='주소찾기로 배송 주소를 입력해 주세요.';
+      button.disabled=!enabled||!cart.length;
+      return;
+    }
     const fd=new FormData(e.target);
     const customer_name=String(fd.get('customer_name')||'').trim();
     const phone=String(fd.get('phone')||'').trim();
-    const address=String(fd.get('address')||'').trim();
     const label=String(fd.get('label')||'').trim()||'기본';
     const saveAddr=!!document.querySelector('#save-address')?.checked&&getToken()&&(selectedAddressId==='new'||!savedAddresses.length);
     if(saveAddr){
