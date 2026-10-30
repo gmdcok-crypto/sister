@@ -40,7 +40,7 @@ document.querySelector('#app').innerHTML=`<header class="${parseRoute().view==='
 <section id="product-view" class="product-view" hidden></section>
 <section id="auth-view" class="auth-view" hidden></section>
 <section id="mypage-view" class="mypage-view" hidden></section>
-</main><footer>언니네닭 <p>상품·가격은 제공된 캡처를 바탕으로 등록한 초기 자료입니다. 상품 사진은 AI로 제작한 연출 이미지입니다.</p></footer><dialog id="cart"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><div id="address-book" class="address-book" hidden></div><div id="address-fields" class="address-fields"><label class="addr-label-field" hidden>배송지명<input name="label" maxlength="40" placeholder="예: 집, 회사" autocomplete="off"></label><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><div class="addr-search-block"><label class="addr-zip-label">우편번호<span class="addr-zip-row"><input name="zonecode" readonly maxlength="10" placeholder="우편번호" autocomplete="postal-code"><button type="button" class="account-btn" data-postcode-search>주소찾기</button></span></label><label>기본 주소<input name="address_base" readonly required minlength="5" maxlength="400" placeholder="주소찾기로 검색해 주세요" autocomplete="street-address"></label><label>상세 주소<input name="address_detail" maxlength="200" placeholder="동·호수 등 상세주소" autocomplete="address-line2"></label><input type="hidden" name="address" value=""></div><label class="check-row" id="save-address-wrap" hidden><input type="checkbox" id="save-address"> 이 배송지를 주소록에 저장</label></div><p id="checkout-note">주문 접수 후 카드 결제를 진행합니다. 배송비는 별도 안내될 수 있습니다.</p><button id="submit" type="submit">주문 접수</button><p id="order-message" role="status"></p></form></dialog>`;
+</main><div id="pay-status" class="pay-status" hidden role="status"></div><footer>언니네닭 <p>상품·가격은 제공된 캡처를 바탕으로 등록한 초기 자료입니다. 상품 사진은 AI로 제작한 연출 이미지입니다.</p></footer><dialog id="cart"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><div id="address-book" class="address-book" hidden></div><div id="address-fields" class="address-fields"><label class="addr-label-field" hidden>배송지명<input name="label" maxlength="40" placeholder="예: 집, 회사" autocomplete="off"></label><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><div class="addr-search-block"><label class="addr-zip-label">우편번호<span class="addr-zip-row"><input name="zonecode" readonly maxlength="10" placeholder="우편번호" autocomplete="postal-code"><button type="button" class="account-btn" data-postcode-search>주소찾기</button></span></label><label>기본 주소<input name="address_base" readonly required minlength="5" maxlength="400" placeholder="주소찾기로 검색해 주세요" autocomplete="street-address"></label><label>상세 주소<input name="address_detail" maxlength="200" placeholder="동·호수 등 상세주소" autocomplete="address-line2"></label><input type="hidden" name="address" value=""></div><label class="check-row" id="save-address-wrap" hidden><input type="checkbox" id="save-address"> 이 배송지를 주소록에 저장</label></div><p id="checkout-note">주문 접수 후 카드 결제를 진행합니다. 배송비는 별도 안내될 수 있습니다.</p><button id="submit" type="submit">주문 접수</button><p id="order-message" role="status"></p></form></dialog>`;
 
 function persist(){localStorage.setItem('unnine-cart',JSON.stringify(cart));document.querySelector('#count').textContent=cart.reduce((n,x)=>n+x.quantity,0)}
 function parseRoute(){
@@ -498,13 +498,22 @@ async function confirmPortonePayment(orderId, paymentId){
   });
 }
 
+function setPayStatus(text){
+  const el=document.querySelector('#pay-status');
+  if(!el)return;
+  if(!text){el.hidden=true;el.textContent='';return}
+  el.hidden=false;
+  el.textContent=text;
+}
+
 async function startCardPayment(result, customer={}){
   const pay=result.payment;
   if(!pay||!window.PortOne?.requestPayment){
     throw new Error('결제 모듈을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
   }
-  // <dialog> top-layer가 포트원 결제 iframe을 가려 "결제창을 여는 중"에 멈추는 문제 방지
+  // dialog/팝업 차단을 피하기 위해 장바구니를 닫고 PC는 iframe, 모바일은 리다이렉트로 결제
   document.querySelector('#cart')?.close();
+  setPayStatus('결제창을 여는 중입니다. 잠시만 기다려 주세요…');
   savePayPending(result.order_id, result.payment_id);
   const phoneDigits=String(customer.phone||'').replace(/\D/g,'');
   let response;
@@ -518,6 +527,8 @@ async function startCardPayment(result, customer={}){
       currency: pay.currency==='CURRENCY_KRW'?'KRW':(pay.currency||'KRW'),
       payMethod: pay.pay_method||'CARD',
       redirectUrl: `${location.origin}/?pay_return=1`,
+      // 팝업 차단 환경에서도 보이도록 iframe/리다이렉트 강제
+      windowType: {pc:'IFRAME', mobile:'REDIRECTION'},
       customer: {
         fullName: customer.name||'고객',
         ...(phoneDigits?{phoneNumber:{number:phoneDigits}}:{}),
@@ -525,17 +536,21 @@ async function startCardPayment(result, customer={}){
     });
   }catch(error){
     clearPayPending();
-    throw new Error(error?.message||'결제창을 열지 못했습니다. 팝업 차단을 해제한 뒤 다시 시도해 주세요.');
+    setPayStatus('');
+    throw new Error(error?.message||'결제창을 열지 못했습니다. 잠시 후 다시 시도해 주세요.');
   }
-  // PC 등 반환값 방식. 모바일은 redirectUrl로 돌아옴(이 페이지의 await는 끝나지 않을 수 있음).
+  setPayStatus('');
+  // PC iframe은 완료 시 resolve. 모바일 리다이렉트면 이 코드까지 오지 않음.
   if(response==null)return null;
   if(response.code!=null){
     clearPayPending();
     throw new Error(response.message||'결제가 취소되었거나 실패했습니다.');
   }
+  setPayStatus('결제 확인 중…');
   const paymentId=response.paymentId||result.payment_id;
   const confirmed=await confirmPortonePayment(result.order_id, paymentId);
   clearPayPending();
+  setPayStatus('');
   return confirmed;
 }
 

@@ -116,6 +116,9 @@ header.auth-mode,footer.auth-mode{display:none}
 .address-fields .addr-zip-row input{margin-top:0}
 .addr-edit-form .addr-zip-row input{margin-top:0}
 .address-fields.is-locked [data-postcode-search]{display:none}
+.pay-status{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483000;max-width:min(520px,calc(100% - 24px));padding:14px 18px;border-radius:14px;background:#1a120e;color:#fff;font-size:15px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.28);text-align:center}
+/* 포트원/나이스페이 결제 iframe이 페이지 뒤로 숨지 않도록 */
+iframe[src*="iamport"],iframe[src*="portone"],iframe[src*="nicepay"],iframe[src*="tosspayments"]{z-index:2147483646 !important}
 @media(max-width:640px){
   .my-order-head{flex-direction:column}
   .my-order-badges{justify-items:start}
