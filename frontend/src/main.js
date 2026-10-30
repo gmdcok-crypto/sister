@@ -4,7 +4,8 @@ const won=n=>n.toLocaleString('ko-KR')+'원';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const AUTH_KEY='unnine-auth';
 const GUEST_KEY='unnine-guest';
-let products=[], categories=[], selected=0, search='', enabled=false, detailId=null, authView=null, mypageView=false, authUser=null, social={kakao:false,naver:false}, myOrders=[], lookupOrder=null, savedAddresses=[], selectedAddressId=null, addressFormMode='list', editingAddressId=null;
+let products=[], categories=[], selected=0, search='', enabled=false, detailId=null, authView=null, mypageView=false, authUser=null, social={kakao:false,naver:false}, payment={card_enabled:false,store_id:'',channel_key_card:''}, myOrders=[], lookupOrder=null, savedAddresses=[], selectedAddressId=null, addressFormMode='list', editingAddressId=null;
+const PAY_PENDING_KEY='unnine-pay-pending';
 let cart=[]; try {cart=JSON.parse(localStorage.getItem('unnine-cart')||'[]').filter(x=>Number.isInteger(x.id)&&Number.isInteger(x.quantity)&&x.quantity>0&&x.quantity<=100)}catch{}
 
 function getToken(){try{return JSON.parse(localStorage.getItem(AUTH_KEY)||'null')?.token||''}catch{return ''}}
@@ -39,7 +40,7 @@ document.querySelector('#app').innerHTML=`<header class="${parseRoute().view==='
 <section id="product-view" class="product-view" hidden></section>
 <section id="auth-view" class="auth-view" hidden></section>
 <section id="mypage-view" class="mypage-view" hidden></section>
-</main><footer>언니네닭 <p>상품·가격은 제공된 캡처를 바탕으로 등록한 초기 자료입니다. 상품 사진은 AI로 제작한 연출 이미지입니다.</p></footer><dialog id="cart"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><div id="address-book" class="address-book" hidden></div><div id="address-fields" class="address-fields"><label class="addr-label-field" hidden>배송지명<input name="label" maxlength="40" placeholder="예: 집, 회사" autocomplete="off"></label><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><label>배송 주소<input name="address" required minlength="5" maxlength="500" autocomplete="street-address"></label><label class="check-row" id="save-address-wrap" hidden><input type="checkbox" id="save-address"> 이 배송지를 주소록에 저장</label></div><p>결제·배송비 연동 전입니다. 현재 기능은 결제 대기 상태의 주문 접수입니다.</p><button id="submit" type="submit">주문 접수</button><p id="order-message" role="status"></p></form></dialog>`;
+</main><footer>언니네닭 <p>상품·가격은 제공된 캡처를 바탕으로 등록한 초기 자료입니다. 상품 사진은 AI로 제작한 연출 이미지입니다.</p></footer><dialog id="cart"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><div id="address-book" class="address-book" hidden></div><div id="address-fields" class="address-fields"><label class="addr-label-field" hidden>배송지명<input name="label" maxlength="40" placeholder="예: 집, 회사" autocomplete="off"></label><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><label>배송 주소<input name="address" required minlength="5" maxlength="500" autocomplete="street-address"></label><label class="check-row" id="save-address-wrap" hidden><input type="checkbox" id="save-address"> 이 배송지를 주소록에 저장</label></div><p id="checkout-note">주문 접수 후 카드 결제를 진행합니다. 배송비는 별도 안내될 수 있습니다.</p><button id="submit" type="submit">주문 접수</button><p id="order-message" role="status"></p></form></dialog>`;
 
 function persist(){localStorage.setItem('unnine-cart',JSON.stringify(cart));document.querySelector('#count').textContent=cart.reduce((n,x)=>n+x.quantity,0)}
 function parseRoute(){
@@ -406,7 +407,94 @@ function updateDetailPrice(root){
   if(el)el.textContent=won(lineUnit(p,currentOptionId(root,p),selectedAddonIds(root)));
 }
 
-function cartRender(){let total=0;document.querySelector('#cart-lines').innerHTML=cart.map((line,index)=>{const p=products.find(p=>p.id===line.id);if(!p)return '';const o=pickOpt(p,line.optionId);const extras=pickAddons(p,line.optionId,line.addonIds);const unit=lineUnit(p,line.optionId,line.addonIds);total+=unit*line.quantity;const extraText=extras.length?`<br><span class="cart-addons">${extras.map(a=>esc(a.label)+' +'+won(a.price)).join(', ')}</span>`:'';return `<div class="line"><div>${esc(p.name)}<br><span>${esc(o.label)}</span>${extraText}<br><strong>${won(unit)}</strong></div><label>수량<input type="number" min="1" max="100" value="${line.quantity}" data-quantity-index="${index}"></label><button data-remove-index="${index}">삭제</button></div>`}).join('')||'<p>장바구니가 비어 있습니다.</p>';document.querySelector('#total').textContent='상품 합계 '+won(total);document.querySelector('#submit').disabled=!enabled||!cart.length;document.querySelector('#submit').textContent=enabled?'주문 접수':'주문 준비 중'}
+function cartRender(){let total=0;document.querySelector('#cart-lines').innerHTML=cart.map((line,index)=>{const p=products.find(p=>p.id===line.id);if(!p)return '';const o=pickOpt(p,line.optionId);const extras=pickAddons(p,line.optionId,line.addonIds);const unit=lineUnit(p,line.optionId,line.addonIds);total+=unit*line.quantity;const extraText=extras.length?`<br><span class="cart-addons">${extras.map(a=>esc(a.label)+' +'+won(a.price)).join(', ')}</span>`:'';return `<div class="line"><div>${esc(p.name)}<br><span>${esc(o.label)}</span>${extraText}<br><strong>${won(unit)}</strong></div><label>수량<input type="number" min="1" max="100" value="${line.quantity}" data-quantity-index="${index}"></label><button data-remove-index="${index}">삭제</button></div>`}).join('')||'<p>장바구니가 비어 있습니다.</p>';document.querySelector('#total').textContent='상품 합계 '+won(total);document.querySelector('#submit').disabled=!enabled||!cart.length;const note=document.querySelector('#checkout-note');
+  if(payment.card_enabled){
+    document.querySelector('#submit').textContent=enabled?'카드로 결제':'주문 준비 중';
+    if(note)note.textContent='주문 정보를 확인한 뒤 카드 결제창으로 이동합니다. 배송비는 별도 안내될 수 있습니다.';
+  }else{
+    document.querySelector('#submit').textContent=enabled?'주문 접수':'주문 준비 중';
+    if(note)note.textContent='결제 연동 전입니다. 현재는 결제 대기 상태로 주문이 접수됩니다.';
+  }
+}
+
+function savePayPending(orderId, paymentId){
+  sessionStorage.setItem(PAY_PENDING_KEY, JSON.stringify({order_id:orderId, payment_id:paymentId}));
+}
+function readPayPending(){
+  try{return JSON.parse(sessionStorage.getItem(PAY_PENDING_KEY)||'null')}catch{return null}
+}
+function clearPayPending(){sessionStorage.removeItem(PAY_PENDING_KEY)}
+
+async function confirmPortonePayment(orderId, paymentId){
+  return request('/api/payments/complete',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({order_id:orderId, payment_id:paymentId}),
+  });
+}
+
+async function startCardPayment(result){
+  const pay=result.payment;
+  if(!pay||!window.PortOne?.requestPayment){
+    throw new Error('결제 모듈을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+  }
+  savePayPending(result.order_id, result.payment_id);
+  const response=await window.PortOne.requestPayment({
+    storeId: pay.store_id,
+    channelKey: pay.channel_key,
+    paymentId: result.payment_id,
+    orderName: result.order_name||'언니네닭 주문',
+    totalAmount: result.total,
+    currency: pay.currency||'CURRENCY_KRW',
+    payMethod: pay.pay_method||'CARD',
+    redirectUrl: `${location.origin}/?pay_return=1`,
+  });
+  // PC 등 반환값 방식. 모바일은 redirectUrl로 돌아옴.
+  if(response==null)return null;
+  if(response.code!=null){
+    clearPayPending();
+    throw new Error(response.message||'결제가 취소되었거나 실패했습니다.');
+  }
+  const paymentId=response.paymentId||result.payment_id;
+  const confirmed=await confirmPortonePayment(result.order_id, paymentId);
+  clearPayPending();
+  return confirmed;
+}
+
+async function finishPayReturn(){
+  const params=new URLSearchParams(location.search);
+  if(params.get('pay_return')!=='1' && !params.get('paymentId'))return;
+  const paymentId=params.get('paymentId')||'';
+  const code=params.get('code');
+  const message=params.get('message')||'결제가 취소되었거나 실패했습니다.';
+  const pending=readPayPending();
+  history.replaceState({}, '', location.pathname + (location.hash||'#/'));
+  const cartDialog=document.querySelector('#cart');
+  const orderMessage=document.querySelector('#order-message');
+  if(code){
+    clearPayPending();
+    if(orderMessage)orderMessage.textContent=message;
+    cartDialog?.showModal();
+    return;
+  }
+  if(!paymentId||!pending?.order_id){
+    clearPayPending();
+    return;
+  }
+  try{
+    const confirmed=await confirmPortonePayment(pending.order_id, paymentId);
+    clearPayPending();
+    localStorage.setItem('unnine-last-order', confirmed.id);
+    if(orderMessage){
+      orderMessage.innerHTML=`결제가 완료됐습니다. 주문번호 ${esc(confirmed.id)} · ${won(confirmed.total)} <button type="button" class="linkish" id="goto-mypage">내역 보기</button>`;
+      document.querySelector('#goto-mypage')?.addEventListener('click',()=>{cartDialog?.close();goMypage()});
+    }
+    cartDialog?.showModal();
+  }catch(error){
+    if(orderMessage)orderMessage.textContent=error.message;
+    cartDialog?.showModal();
+  }
+}
 
 function addToCart(p,optionId,addonIds,quantity){
   const line=cart.find(x=>x.id===p.id&&x.optionId===optionId&&sameAddons(x.addonIds,addonIds));
@@ -656,7 +744,7 @@ document.querySelector('#order').onsubmit=async e=>{
     return;
   }
   const button=document.querySelector('#submit'),message=document.querySelector('#order-message');
-  button.disabled=true;message.textContent='주문 접수 중…';
+  button.disabled=true;message.textContent=payment.card_enabled?'결제 준비 중…':'주문 접수 중…';
   try{
     const fd=new FormData(e.target);
     const customer_name=String(fd.get('customer_name')||'').trim();
@@ -677,10 +765,22 @@ document.querySelector('#order').onsubmit=async e=>{
     selectedAddressId=null;
     renderAddressBook();
     localStorage.setItem('unnine-last-order',result.order_id);
-    message.textContent=`주문이 접수됐습니다. 번호 ${result.order_id} · 상품 합계 ${won(result.total)} · 결제 대기`;
-    message.innerHTML+=` <button type="button" class="linkish" id="goto-mypage">내역 보기</button>`;
-    document.querySelector('#goto-mypage')?.addEventListener('click',()=>{document.querySelector('#cart').close();goMypage()});
-  }catch(error){message.textContent=error.message;button.disabled=!enabled||!cart.length}
+    if(result.payment){
+      message.textContent='결제창을 여는 중…';
+      const confirmed=await startCardPayment(result);
+      if(confirmed){
+        message.innerHTML=`결제가 완료됐습니다. 주문번호 ${esc(confirmed.id)} · ${won(confirmed.total)} <button type="button" class="linkish" id="goto-mypage">내역 보기</button>`;
+        document.querySelector('#goto-mypage')?.addEventListener('click',()=>{document.querySelector('#cart').close();goMypage()});
+      }else{
+        message.textContent=`주문이 생성됐습니다. 번호 ${result.order_id} · 결제 창이 열리면 결제를 완료해 주세요.`;
+      }
+    }else{
+      message.textContent=`주문이 접수됐습니다. 번호 ${result.order_id} · 상품 합계 ${won(result.total)} · 결제 대기`;
+      message.innerHTML+=` <button type="button" class="linkish" id="goto-mypage">내역 보기</button>`;
+      document.querySelector('#goto-mypage')?.addEventListener('click',()=>{document.querySelector('#cart').close();goMypage()});
+    }
+  }catch(error){message.textContent=error.message}
+  finally{button.disabled=!enabled||!cart.length}
 };
 
 function navButton(c){const img=c.image?`<img src="${esc(c.image)}" alt="" loading="lazy">`:'';return `<button type="button" class="cat" data-category="${c.id}">${img}<span>${esc(c.name)}</span></button>`}
@@ -691,13 +791,14 @@ async function init(){
     let cfg;
     [categories,products,cfg]=await Promise.all([request('/api/categories'),request('/api/products'),request('/api/config')]);
     {const rank=new Map(categories.map((c,i)=>[c.id,i]));products.sort((a,b)=>(rank.get(a.category_id)??1e9)-(rank.get(b.category_id)??1e9)||a.id-b.id)}
-    enabled=cfg.orders_enabled;allImage=cfg.all_category_image||'';social=cfg.social||social;
+    enabled=cfg.orders_enabled;allImage=cfg.all_category_image||'';social=cfg.social||social;payment=cfg.payment||payment;
     if(getToken()){
       try{authUser=await request('/api/auth/me')}catch{clearAuth()}
     }
     cart=cart.map(x=>{const p=products.find(p=>p.id===x.id);if(!p)return null;const optionId=x.optionId??opts(p)[0].id;const addonIds=(x.addonIds||[]).filter(id=>addonsFor(p,optionId).some(a=>a.id===id));return {id:x.id,optionId,addonIds,quantity:x.quantity}}).filter(Boolean);
     document.querySelector('#nav').innerHTML=[{id:0,name:'전체상품',image:allImage},...categories].map(navButton).join('');
-    updateAccountUI();persist();showView();
+    updateAccountUI();persist();cartRender();showView();
+    await finishPayReturn();
   }catch(error){document.querySelector('#error').textContent=error.message}
 }
 

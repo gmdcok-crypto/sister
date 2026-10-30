@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Optional, Set, Union
 from urllib.parse import urlencode
 
-from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field, AliasChoices, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,6 +15,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueCon
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from .auth_util import hash_password, new_session_token, session_expiry, verify_password
+from .portone import fetch_payment, paid_total
 
 ALLOWED_IMAGE_TYPES = {
     'image/jpeg': '.jpg',
@@ -34,6 +35,18 @@ class Settings(BaseSettings):
     naver_client_id: str = ''
     naver_client_secret: str = ''
     naver_redirect_uri: str = ''
+    portone_store_id: str = Field(default='', validation_alias=AliasChoices('PORTONE_STORE_ID', 'portone_store_id'))
+    portone_api_secret: str = Field(
+        default='', validation_alias=AliasChoices('PORTONE_API_SECRET', 'portone_api_secret')
+    )
+    portone_channel_key_card: str = Field(
+        default='',
+        validation_alias=AliasChoices(
+            'PORTONE_CHANNEL_KEY_CARD',
+            'PORTONE_CHANNEL_KEY',
+            'portone_channel_key_card',
+        ),
+    )
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
 
 
@@ -144,9 +157,26 @@ class Order(Base):
     phone: Mapped[str] = mapped_column(String(30))
     address: Mapped[str] = mapped_column(String(500))
     tracking_number: Mapped[str] = mapped_column(String(20), default='')
+    payment_id: Mapped[str] = mapped_column(String(80), default='')
     total: Mapped[int] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(40), default='pending_payment')
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+def portone_card_enabled() -> bool:
+    return bool(
+        settings.portone_store_id.strip()
+        and settings.portone_api_secret.strip()
+        and settings.portone_channel_key_card.strip()
+    )
+
+
+def order_display_name(resolved: list) -> str:
+    if not resolved:
+        return '언니네닭 주문'
+    first = resolved[0][0].name
+    extra = len(resolved) - 1
+    return f'{first} 외 {extra}건' if extra else first
 
 
 class OrderItem(Base):
@@ -576,12 +606,18 @@ def categories(session: Session = Depends(db)):
 @app.get('/api/config')
 def config():
     catalog = json.loads((Path(__file__).resolve().parents[1] / 'catalog.json').read_text(encoding='utf-8'))
+    card_on = portone_card_enabled()
     return {
         'orders_enabled': settings.orders_enabled,
         'all_category_image': catalog.get('all_category_image', ''),
         'social': {
             'kakao': bool(settings.kakao_rest_api_key and settings.kakao_redirect_uri),
             'naver': bool(settings.naver_client_id and settings.naver_redirect_uri),
+        },
+        'payment': {
+            'card_enabled': card_on,
+            'store_id': settings.portone_store_id.strip() if card_on else '',
+            'channel_key_card': settings.portone_channel_key_card.strip() if card_on else '',
         },
     }
 
@@ -860,12 +896,15 @@ def order(data: OrderIn, session: Session = Depends(db), user: Optional[User] = 
         total += unit_price * line.quantity
         resolved.append((p, label, unit_price, line.quantity, addon_rows))
 
+    order_id = secrets.token_urlsafe(24)
+    payment_id = f'order-{order_id}'
     receipt = Order(
-        id=secrets.token_urlsafe(24),
+        id=order_id,
         user_id=user.id if user else None,
         customer_name=data.customer_name.strip(),
         phone=data.phone,
         address=data.address.strip(),
+        payment_id=payment_id,
         total=total,
     )
     if not receipt.customer_name or len(receipt.address) < 5:
@@ -893,7 +932,99 @@ def order(data: OrderIn, session: Session = Depends(db), user: Optional[User] = 
                 )
             )
     session.commit()
-    return {'order_id': receipt.id, 'total': total, 'status': receipt.status}
+    body = {
+        'order_id': receipt.id,
+        'payment_id': payment_id,
+        'total': total,
+        'status': receipt.status,
+        'order_name': order_display_name(resolved),
+    }
+    if portone_card_enabled():
+        body['payment'] = {
+            'store_id': settings.portone_store_id.strip(),
+            'channel_key': settings.portone_channel_key_card.strip(),
+            'pay_method': 'CARD',
+            'currency': 'CURRENCY_KRW',
+        }
+    return body
+
+
+class PaymentCompleteIn(BaseModel):
+    payment_id: str = Field(min_length=4, max_length=80)
+    order_id: str = Field(min_length=4, max_length=80)
+
+    @field_validator('payment_id', 'order_id')
+    @classmethod
+    def strip_payment_ids(cls, value: str) -> str:
+        return value.strip()
+
+
+def mark_order_paid_from_portone(session: Session, order: Order, payment_id: str) -> Order:
+    if not portone_card_enabled():
+        raise HTTPException(503, '카드 결제가 설정되지 않았습니다.')
+    expected = (order.payment_id or '').strip() or f'order-{order.id}'
+    if payment_id != expected:
+        raise HTTPException(409, '결제 정보가 주문과 일치하지 않습니다.')
+    if order.status == 'paid':
+        return order
+    if order.status not in ('pending_payment',):
+        raise HTTPException(409, '이미 처리된 주문입니다.')
+    try:
+        payment = fetch_payment(payment_id, settings.portone_api_secret.strip())
+    except RuntimeError as exc:
+        raise HTTPException(502, str(exc)) from exc
+    status = payment.get('status')
+    total = paid_total(payment)
+    if total is None or total != order.total:
+        raise HTTPException(409, '결제 금액이 주문 금액과 다릅니다.')
+    if status != 'PAID':
+        raise HTTPException(409, f'결제가 완료되지 않았습니다. ({status or "unknown"})')
+    order.payment_id = payment_id
+    order.status = 'paid'
+    session.commit()
+    return order
+
+
+@app.post('/api/payments/complete')
+def payment_complete(data: PaymentCompleteIn, session: Session = Depends(db)):
+    order = session.get(Order, data.order_id)
+    if not order:
+        raise HTTPException(404, '주문을 찾을 수 없습니다.')
+    order = mark_order_paid_from_portone(session, order, data.payment_id)
+    return serialize_order(session, order)
+
+
+@app.post('/api/payments/portone/webhook')
+async def payment_webhook(request: Request, session: Session = Depends(db)):
+    """PortOne V2 webhook: verify paymentId against stored order when possible."""
+    if not portone_card_enabled():
+        return {'ok': True, 'ignored': True}
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+    payment_id = str(
+        payload.get('paymentId')
+        or payload.get('payment_id')
+        or (payload.get('data') or {}).get('paymentId')
+        or ''
+    ).strip()
+    if not payment_id:
+        return {'ok': True, 'ignored': True}
+    order = session.scalar(select(Order).where(Order.payment_id == payment_id))
+    if not order and payment_id.startswith('order-'):
+        order = session.get(Order, payment_id[len('order-') :])
+    if not order:
+        return {'ok': True, 'ignored': True}
+    if order.status == 'paid':
+        return {'ok': True, 'status': 'paid'}
+    try:
+        mark_order_paid_from_portone(session, order, payment_id)
+    except HTTPException:
+        return {'ok': True, 'status': order.status}
+    return {'ok': True, 'status': 'paid'}
 
 
 ORDER_STATUSES = ('pending_payment', 'paid', 'preparing', 'shipping', 'completed', 'cancelled')
@@ -954,6 +1085,7 @@ def serialize_order(session: Session, o: Order) -> dict:
         'total': o.total,
         'status': o.status,
         'status_label': ORDER_STATUS_LABELS.get(o.status, o.status),
+        'payment_id': o.payment_id or '',
         'payment_status': o.status,
         'payment_label': ORDER_STATUS_LABELS.get(o.status, o.status),
         'created_at': o.created_at,

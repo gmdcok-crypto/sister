@@ -346,3 +346,66 @@ def test_user_addresses():
     assert next(a for a in listed2 if a['id'] == home_id)['is_default'] is True
     assert client.delete(f'/api/my/addresses/{office_id}', headers=headers).status_code == 200
     assert all(a['id'] != office_id for a in client.get('/api/my/addresses', headers=headers).json())
+
+def test_config_payment_off_by_default():
+    cfg = client.get('/api/config').json()
+    assert cfg['payment']['card_enabled'] is False
+    assert cfg['payment']['store_id'] == ''
+
+
+def test_portone_card_complete(monkeypatch):
+    settings.portone_store_id = 'store-test'
+    settings.portone_api_secret = 'secret-test'
+    settings.portone_channel_key_card = 'channel-key-test'
+    try:
+        cfg = client.get('/api/config').json()
+        assert cfg['payment']['card_enabled'] is True
+        assert cfg['payment']['store_id'] == 'store-test'
+        oid = option_id('500g')
+        created = client.post('/api/orders', json=payload([dict(product_id=1, option_id=oid, quantity=1)]))
+        assert created.status_code == 201
+        body = created.json()
+        assert body['payment']['pay_method'] == 'CARD'
+        assert body['payment_id'].startswith('order-')
+        order_id = body['order_id']
+        payment_id = body['payment_id']
+        total = body['total']
+
+        def fake_fetch(pid, secret, timeout=60):
+            assert pid == payment_id
+            assert secret == 'secret-test'
+            return {'status': 'PAID', 'amount': {'total': total}}
+
+        monkeypatch.setattr('app.main.fetch_payment', fake_fetch)
+        done = client.post(
+            '/api/payments/complete',
+            json={'order_id': order_id, 'payment_id': payment_id},
+        )
+        assert done.status_code == 200
+        assert done.json()['status'] == 'paid'
+
+        again = client.post(
+            '/api/payments/complete',
+            json={'order_id': order_id, 'payment_id': payment_id},
+        )
+        assert again.status_code == 200 and again.json()['status'] == 'paid'
+
+        bad = client.post(
+            '/api/orders',
+            json=payload([dict(product_id=1, option_id=oid, quantity=2)]),
+        )
+        assert bad.status_code == 201
+
+        def wrong_amount(pid, secret, timeout=60):
+            return {'status': 'PAID', 'amount': {'total': 1}}
+
+        monkeypatch.setattr('app.main.fetch_payment', wrong_amount)
+        mismatch = client.post(
+            '/api/payments/complete',
+            json={'order_id': bad.json()['order_id'], 'payment_id': bad.json()['payment_id']},
+        )
+        assert mismatch.status_code == 409
+    finally:
+        settings.portone_store_id = ''
+        settings.portone_api_secret = ''
+        settings.portone_channel_key_card = ''

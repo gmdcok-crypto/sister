@@ -58,6 +58,14 @@ def ensure_order_tracking_column():
     )
 
 
+def ensure_order_payment_id_column():
+    _add_column_if_missing(
+        'orders',
+        'payment_id',
+        "ALTER TABLE orders ADD COLUMN payment_id VARCHAR(80) NOT NULL DEFAULT ''",
+    )
+
+
 def ensure_product_description_column():
     _add_column_if_missing(
         'products',
@@ -184,6 +192,7 @@ def main():
     ensure_order_item_option_column()
     ensure_order_user_column()
     ensure_order_tracking_column()
+    ensure_order_payment_id_column()
     ensure_product_description_column()
     ensure_user_admin_columns()
     catalog = json.loads((Path(__file__).parents[1] / 'catalog.json').read_text(encoding='utf-8'))
