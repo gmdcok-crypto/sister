@@ -96,6 +96,10 @@ header.auth-mode,footer.auth-mode{display:none}
 .addr-edit-actions{display:flex;flex-wrap:wrap;gap:8px}
 .check-row{display:flex!important;align-items:center;gap:8px;font-size:14px;color:#444}
 .check-row input{width:auto;accent-color:#ff633e}
+.save-address-wrap{display:grid;gap:6px;margin:12px 0 4px}
+.save-address-wrap .account-btn{justify-self:start}
+.save-address-hint{margin:0;font-size:13px;color:#666}
+#save-address-msg{margin:0;font-size:13px}
 .address-book{margin:0 0 12px}
 .addr-book-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
 .addr-book-head p{margin:0;font-size:14px;color:#666}
