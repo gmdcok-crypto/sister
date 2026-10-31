@@ -173,7 +173,10 @@ function orderHistoryCard(o){
     const addons=(i.addons||[]).map(a=>`${esc(a.label)}`).join(', ');
     return `<li>${esc(i.name)}${i.option?` / ${esc(i.option)}`:''} × ${i.quantity}${addons?` <span class="muted">(+${addons})</span>`:''}</li>`;
   }).join('');
-  return `<article class="my-order">
+  const actions=[];
+  if(o.can_pay) actions.push(`<button type="button" data-order-pay="${esc(o.id)}" data-order-phone="${esc(o.phone||'')}">결제하기</button>`);
+  if(o.can_cancel) actions.push(`<button type="button" class="account-btn" data-order-cancel="${esc(o.id)}" data-order-phone="${esc(o.phone||'')}">주문취소</button>`);
+  return `<article class="my-order" data-order-card="${esc(o.id)}">
     <div class="my-order-head">
       <div>
         <p class="my-order-date">${formatWhen(o.created_at)}</p>
@@ -191,6 +194,7 @@ function orderHistoryCard(o){
       <p><strong>배송지</strong> ${esc(o.address)}</p>
       <p><strong>배송조회</strong> ${o.tracking_number?`CJ대한통운 ${esc(o.tracking_number)} <a class="track-link" href="${esc(o.tracking_url)}" target="_blank" rel="noopener">조회하기</a>`:'운송장 등록 전'}</p>
     </div>
+    ${actions.length?`<div class="my-order-actions">${actions.join('')}<p class="auth-msg order-action-msg" hidden></p></div>`:''}
   </article>`;
 }
 
@@ -762,6 +766,60 @@ document.querySelector('#mypage-view').addEventListener('click',async e=>{
       await loadAddresses();
       addressFormMode='list';editingAddressId=null;renderMypage();
     }catch(error){alert(error.message)}
+    return;
+  }
+  const cancelBtn=e.target.closest('[data-order-cancel]');
+  if(cancelBtn){
+    if(!confirm('이 주문을 취소할까요?'))return;
+    const orderId=cancelBtn.dataset.orderCancel;
+    const phone=cancelBtn.dataset.orderPhone||'';
+    const msg=cancelBtn.closest('.my-order')?.querySelector('.order-action-msg');
+    cancelBtn.disabled=true;
+    if(msg){msg.hidden=false;msg.textContent='취소 중…'}
+    try{
+      const updated=await request(`/api/orders/${encodeURIComponent(orderId)}/cancel`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({phone}),
+      });
+      if(lookupOrder?.id===orderId) lookupOrder=updated;
+      await loadMyOrders();
+      renderMypage();
+    }catch(error){
+      if(msg){msg.hidden=false;msg.textContent=error.message}
+      cancelBtn.disabled=false;
+    }
+    return;
+  }
+  const payBtn=e.target.closest('[data-order-pay]');
+  if(payBtn){
+    const orderId=payBtn.dataset.orderPay;
+    const phone=payBtn.dataset.orderPhone||'';
+    const msg=payBtn.closest('.my-order')?.querySelector('.order-action-msg');
+    payBtn.disabled=true;
+    if(msg){msg.hidden=false;msg.textContent='결제 준비 중…'}
+    try{
+      const pay=await request(`/api/orders/${encodeURIComponent(orderId)}/pay`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({phone}),
+      });
+      if(msg)msg.textContent='결제창을 여는 중…';
+      const confirmed=await startCardPayment(pay,{name:pay.customer_name,phone:pay.phone||phone});
+      if(confirmed){
+        if(lookupOrder?.id===orderId) lookupOrder=confirmed;
+        await loadMyOrders();
+        renderMypage();
+        setPayStatus(`결제가 완료됐습니다. 주문번호 ${confirmed.id}`);
+        setTimeout(()=>setPayStatus(''),4000);
+      }else{
+        if(msg){msg.hidden=false;msg.textContent='결제창에서 결제를 마쳐 주세요.'}
+        payBtn.disabled=false;
+      }
+    }catch(error){
+      if(msg){msg.hidden=false;msg.textContent=error.message}
+      payBtn.disabled=false;
+    }
   }
 });
 document.querySelector('#mypage-view').addEventListener('input',e=>{

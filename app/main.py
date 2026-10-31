@@ -898,7 +898,7 @@ def order(data: OrderIn, session: Session = Depends(db), user: Optional[User] = 
         resolved.append((p, label, unit_price, line.quantity, addon_rows))
 
     order_id = secrets.token_urlsafe(24)
-    payment_id = f'order-{order_id}'
+    payment_id = new_payment_id_for(order_id)
     receipt = Order(
         id=order_id,
         user_id=user.id if user else None,
@@ -986,6 +986,42 @@ def mark_order_paid_from_portone(session: Session, order: Order, payment_id: str
     return order
 
 
+def phone_digits(value: str) -> str:
+    return ''.join(ch for ch in (value or '') if ch.isdigit())
+
+
+def require_order_access(order: Order, user: Optional[User], phone: str = '') -> None:
+    if user is not None and order.user_id is not None and order.user_id == user.id:
+        return
+    entered = phone_digits(phone)
+    stored = phone_digits(order.phone)
+    if entered and stored and entered == stored:
+        return
+    raise HTTPException(404, '주문 정보를 찾을 수 없습니다. 주문번호와 연락처를 확인해 주세요.')
+
+
+def order_name_from_items(session: Session, order: Order) -> str:
+    rows = list(session.scalars(select(OrderItem).where(OrderItem.order_id == order.id)))
+    if not rows:
+        return '언니네닭 주문'
+    first = rows[0].product_name
+    extra = len(rows) - 1
+    return f'{first} 외 {extra}건' if extra else first
+
+
+def new_payment_id_for(order_id: str) -> str:
+    return f'pay-{order_id}-{secrets.token_hex(4)}'
+
+
+class OrderAccessIn(BaseModel):
+    phone: str = Field(default='', max_length=30)
+
+    @field_validator('phone')
+    @classmethod
+    def strip_phone(cls, value: str) -> str:
+        return value.strip()
+
+
 @app.post('/api/payments/complete')
 def payment_complete(data: PaymentCompleteIn, session: Session = Depends(db)):
     order = session.get(Order, data.order_id)
@@ -993,6 +1029,61 @@ def payment_complete(data: PaymentCompleteIn, session: Session = Depends(db)):
         raise HTTPException(404, '주문을 찾을 수 없습니다.')
     order = mark_order_paid_from_portone(session, order, data.payment_id)
     return serialize_order(session, order)
+
+
+@app.post('/api/orders/{order_id}/cancel')
+def cancel_order(
+    order_id: str,
+    data: OrderAccessIn,
+    session: Session = Depends(db),
+    user: Optional[User] = Depends(get_user_optional),
+):
+    order = session.get(Order, order_id)
+    if not order:
+        raise HTTPException(404, '주문 정보를 찾을 수 없습니다. 주문번호와 연락처를 확인해 주세요.')
+    require_order_access(order, user, data.phone)
+    if order.status == 'cancelled':
+        return serialize_order(session, order)
+    if order.status != 'pending_payment':
+        raise HTTPException(409, '결제 대기 중인 주문만 취소할 수 있습니다.')
+    order.status = 'cancelled'
+    session.commit()
+    return serialize_order(session, order)
+
+
+@app.post('/api/orders/{order_id}/pay')
+def pay_order(
+    order_id: str,
+    data: OrderAccessIn,
+    session: Session = Depends(db),
+    user: Optional[User] = Depends(get_user_optional),
+):
+    order = session.get(Order, order_id)
+    if not order:
+        raise HTTPException(404, '주문 정보를 찾을 수 없습니다. 주문번호와 연락처를 확인해 주세요.')
+    require_order_access(order, user, data.phone)
+    if order.status != 'pending_payment':
+        raise HTTPException(409, '결제 대기 중인 주문만 다시 결제할 수 있습니다.')
+    if not portone_card_enabled():
+        raise HTTPException(503, '카드 결제가 설정되지 않았습니다.')
+    payment_id = new_payment_id_for(order.id)
+    order.payment_id = payment_id
+    session.commit()
+    return {
+        'order_id': order.id,
+        'payment_id': payment_id,
+        'total': order.total,
+        'status': order.status,
+        'order_name': order_name_from_items(session, order),
+        'customer_name': order.customer_name,
+        'phone': order.phone,
+        'payment': {
+            'store_id': settings.portone_store_id.strip(),
+            'channel_key': settings.portone_channel_key_card.strip(),
+            'pay_method': 'CARD',
+            'currency': 'KRW',
+        },
+    }
 
 
 @app.post('/api/payments/portone/webhook')
@@ -1016,7 +1107,13 @@ async def payment_webhook(request: Request, session: Session = Depends(db)):
         return {'ok': True, 'ignored': True}
     order = session.scalar(select(Order).where(Order.payment_id == payment_id))
     if not order and payment_id.startswith('order-'):
+        # legacy payment_id = order-{orderId}
         order = session.get(Order, payment_id[len('order-') :])
+    if not order and payment_id.startswith('pay-'):
+        # pay-{orderId}-{suffix}
+        rest = payment_id[len('pay-') :]
+        maybe_id = rest.rsplit('-', 1)[0] if '-' in rest else rest
+        order = session.get(Order, maybe_id)
     if not order:
         return {'ok': True, 'ignored': True}
     if order.status == 'paid':
@@ -1089,6 +1186,8 @@ def serialize_order(session: Session, o: Order) -> dict:
         'payment_id': o.payment_id or '',
         'payment_status': o.status,
         'payment_label': ORDER_STATUS_LABELS.get(o.status, o.status),
+        'can_pay': o.status == 'pending_payment' and portone_card_enabled(),
+        'can_cancel': o.status == 'pending_payment',
         'created_at': o.created_at,
         'items': items,
     }

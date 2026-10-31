@@ -366,7 +366,7 @@ def test_portone_card_complete(monkeypatch):
         assert created.status_code == 201
         body = created.json()
         assert body['payment']['pay_method'] == 'CARD'
-        assert body['payment_id'].startswith('order-')
+        assert body['payment_id'].startswith('pay-')
         order_id = body['order_id']
         payment_id = body['payment_id']
         total = body['total']
@@ -405,6 +405,42 @@ def test_portone_card_complete(monkeypatch):
             json={'order_id': bad.json()['order_id'], 'payment_id': bad.json()['payment_id']},
         )
         assert mismatch.status_code == 409
+    finally:
+        settings.portone_store_id = ''
+        settings.portone_api_secret = ''
+        settings.portone_channel_key_card = ''
+
+def test_pending_order_pay_and_cancel():
+    settings.portone_store_id = 'store-test'
+    settings.portone_api_secret = 'secret-test'
+    settings.portone_channel_key_card = 'channel-key-test'
+    try:
+        oid = option_id('500g')
+        created = client.post('/api/orders', json=payload([dict(product_id=1, option_id=oid, quantity=1)]))
+        assert created.status_code == 201
+        order_id = created.json()['order_id']
+        phone = '01012345678'
+        listed = client.get('/api/admin/orders', headers=ADMIN).json()
+        row = next(o for o in listed if o['id'] == order_id)
+        assert row['can_pay'] is True and row['can_cancel'] is True
+
+        repay = client.post(f'/api/orders/{order_id}/pay', json={'phone': phone})
+        assert repay.status_code == 200
+        assert repay.json()['payment_id'].startswith('pay-')
+        assert repay.json()['payment']['pay_method'] == 'CARD'
+        assert repay.json()['payment_id'] != created.json()['payment_id']
+
+        bad_phone = client.post(f'/api/orders/{order_id}/cancel', json={'phone': '01000000000'})
+        assert bad_phone.status_code == 404
+
+        cancelled = client.post(f'/api/orders/{order_id}/cancel', json={'phone': phone})
+        assert cancelled.status_code == 200
+        assert cancelled.json()['status'] == 'cancelled'
+        assert cancelled.json()['can_pay'] is False
+        assert cancelled.json()['can_cancel'] is False
+
+        again = client.post(f'/api/orders/{order_id}/pay', json={'phone': phone})
+        assert again.status_code == 409
     finally:
         settings.portone_store_id = ''
         settings.portone_api_secret = ''
