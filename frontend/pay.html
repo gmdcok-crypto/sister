@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="언니네닭 결제">
+  <link rel="icon" type="image/png" href="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/unnine-logo-transparent.webp?v=1">
+  <title>결제 | 언니네닭</title>
+  <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+</head>
+<body>
+  <main class="pay-shell">
+    <img class="pay-logo" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/unnine-logo-transparent.webp?v=1" alt="언니네닭">
+    <h1>결제 진행</h1>
+    <p id="pay-msg" role="status">결제창을 준비하는 중입니다…</p>
+    <p id="pay-sub" class="pay-sub">잠시만 기다려 주세요. 결제창이 이 화면에 표시됩니다.</p>
+    <div class="pay-actions">
+      <a class="pay-link" href="/#/mypage">주문내역으로</a>
+      <a class="pay-link" href="/">쇼핑 계속하기</a>
+    </div>
+  </main>
+  <script type="module" src="/src/pay.js"></script>
+</body>
+</html>

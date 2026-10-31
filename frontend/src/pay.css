@@ -1,0 +1,22 @@
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font:16px/1.6 "Malgun Gothic",sans-serif;color:#262626;background:linear-gradient(180deg,#fff7f3,#fff)}
+.pay-shell{max-width:480px;margin:0 auto;padding:48px 24px;text-align:center}
+.pay-logo{width:96px;height:auto;margin:0 auto 20px;display:block}
+.pay-shell h1{margin:0 0 12px;font-size:28px;letter-spacing:-1px}
+#pay-msg{margin:0 0 8px;font-size:17px;font-weight:700;color:#1a120e}
+.pay-sub{margin:0 0 28px;color:#666;font-size:14px}
+.pay-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.pay-link{display:inline-block;padding:10px 16px;border-radius:999px;background:#fff;border:1px solid #ffded2;color:#c2410c;text-decoration:none;font-weight:700;font-size:14px}
+/* 포트원/나이스페이 결제창이 항상 최상단에 보이도록 */
+iframe[src*="iamport"],
+iframe[src*="portone"],
+iframe[src*="checkout-service"],
+iframe[src*="nicepay"],
+iframe[src*="tosspayments"]{
+  position:fixed !important;
+  z-index:2147483647 !important;
+}
+body > div:has(> iframe[src*="checkout-service"]),
+body > div:has(> iframe[src*="iamport"]){
+  z-index:2147483646 !important;
+}

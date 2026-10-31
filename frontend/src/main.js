@@ -6,6 +6,7 @@ const AUTH_KEY='unnine-auth';
 const GUEST_KEY='unnine-guest';
 let products=[], categories=[], selected=0, search='', enabled=false, detailId=null, authView=null, mypageView=false, authUser=null, social={kakao:false,naver:false}, payment={card_enabled:false,store_id:'',channel_key_card:''}, myOrders=[], lookupOrder=null, savedAddresses=[], selectedAddressId=null, addressFormMode='list', editingAddressId=null;
 const PAY_PENDING_KEY='unnine-pay-pending';
+const PAY_LAUNCH_KEY='unnine-pay-launch';
 let cart=[]; try {cart=JSON.parse(localStorage.getItem('unnine-cart')||'[]').filter(x=>Number.isInteger(x.id)&&Number.isInteger(x.quantity)&&x.quantity>0&&x.quantity<=100)}catch{}
 
 function getToken(){try{return JSON.parse(localStorage.getItem(AUTH_KEY)||'null')?.token||''}catch{return ''}}
@@ -510,52 +511,20 @@ function setPayStatus(text){
   el.textContent=text;
 }
 
-async function startCardPayment(result, customer={}){
-  const pay=result.payment;
-  if(!pay||!window.PortOne?.requestPayment){
-    throw new Error('결제 모듈을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
-  }
-  // dialog/팝업 차단을 피하기 위해 장바구니를 닫고 PC는 iframe, 모바일은 리다이렉트로 결제
-  document.querySelector('#cart')?.close();
-  setPayStatus('결제창을 여는 중입니다. 잠시만 기다려 주세요…');
+/** 장바구니 dialog와 분리된 /pay 전용 페이지에서 결제창을 연다. */
+function goPortoneCheckout(result, customer={}){
+  if(!result?.payment) throw new Error('결제 정보가 없습니다.');
   savePayPending(result.order_id, result.payment_id);
-  const phoneDigits=String(customer.phone||'').replace(/\D/g,'');
-  let response;
-  try{
-    response=await window.PortOne.requestPayment({
-      storeId: pay.store_id,
-      channelKey: pay.channel_key,
-      paymentId: result.payment_id,
-      orderName: result.order_name||'언니네닭 주문',
-      totalAmount: result.total,
-      currency: pay.currency==='CURRENCY_KRW'?'KRW':(pay.currency||'KRW'),
-      payMethod: pay.pay_method||'CARD',
-      redirectUrl: `${location.origin}/?pay_return=1`,
-      // 팝업 차단 환경에서도 보이도록 iframe/리다이렉트 강제
-      windowType: {pc:'IFRAME', mobile:'REDIRECTION'},
-      customer: {
-        fullName: customer.name||'고객',
-        ...(phoneDigits?{phoneNumber:{number:phoneDigits}}:{}),
-      },
-    });
-  }catch(error){
-    clearPayPending();
-    setPayStatus('');
-    throw new Error(error?.message||'결제창을 열지 못했습니다. 잠시 후 다시 시도해 주세요.');
-  }
-  setPayStatus('');
-  // PC iframe은 완료 시 resolve. 모바일 리다이렉트면 이 코드까지 오지 않음.
-  if(response==null)return null;
-  if(response.code!=null){
-    clearPayPending();
-    throw new Error(response.message||'결제가 취소되었거나 실패했습니다.');
-  }
-  setPayStatus('결제 확인 중…');
-  const paymentId=response.paymentId||result.payment_id;
-  const confirmed=await confirmPortonePayment(result.order_id, paymentId);
-  clearPayPending();
-  setPayStatus('');
-  return confirmed;
+  sessionStorage.setItem(PAY_LAUNCH_KEY, JSON.stringify({
+    order_id: result.order_id,
+    payment_id: result.payment_id,
+    total: result.total,
+    order_name: result.order_name||'언니네닭 주문',
+    payment: result.payment,
+    customer: {name: customer.name||'', phone: customer.phone||''},
+  }));
+  document.querySelector('#cart')?.close();
+  location.href='/pay.html';
 }
 
 async function finishPayReturn(){
@@ -566,12 +535,12 @@ async function finishPayReturn(){
   const message=params.get('message')||'결제가 취소되었거나 실패했습니다.';
   const pending=readPayPending();
   history.replaceState({}, '', location.pathname + (location.hash||'#/'));
-  const cartDialog=document.querySelector('#cart');
-  const orderMessage=document.querySelector('#order-message');
+  sessionStorage.removeItem(PAY_LAUNCH_KEY);
   if(code){
     clearPayPending();
-    if(orderMessage)orderMessage.textContent=message;
-    cartDialog?.showModal();
+    setPayStatus(message);
+    setTimeout(()=>setPayStatus(''),5000);
+    goMypage();
     return;
   }
   if(!paymentId||!pending?.order_id){
@@ -579,17 +548,17 @@ async function finishPayReturn(){
     return;
   }
   try{
+    setPayStatus('결제 확인 중…');
     const confirmed=await confirmPortonePayment(pending.order_id, paymentId);
     clearPayPending();
     localStorage.setItem('unnine-last-order', confirmed.id);
-    if(orderMessage){
-      orderMessage.innerHTML=`결제가 완료됐습니다. 주문번호 ${esc(confirmed.id)} · ${won(confirmed.total)} <button type="button" class="linkish" id="goto-mypage">내역 보기</button>`;
-      document.querySelector('#goto-mypage')?.addEventListener('click',()=>{cartDialog?.close();goMypage()});
-    }
-    cartDialog?.showModal();
+    setPayStatus(`결제가 완료됐습니다. 주문번호 ${confirmed.id}`);
+    setTimeout(()=>setPayStatus(''),4000);
+    goMypage();
   }catch(error){
-    if(orderMessage)orderMessage.textContent=error.message;
-    cartDialog?.showModal();
+    setPayStatus(error.message||'결제 확인에 실패했습니다.');
+    setTimeout(()=>setPayStatus(''),5000);
+    goMypage();
   }
 }
 
@@ -804,18 +773,8 @@ document.querySelector('#mypage-view').addEventListener('click',async e=>{
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({phone}),
       });
-      if(msg)msg.textContent='결제창을 여는 중…';
-      const confirmed=await startCardPayment(pay,{name:pay.customer_name,phone:pay.phone||phone});
-      if(confirmed){
-        if(lookupOrder?.id===orderId) lookupOrder=confirmed;
-        await loadMyOrders();
-        renderMypage();
-        setPayStatus(`결제가 완료됐습니다. 주문번호 ${confirmed.id}`);
-        setTimeout(()=>setPayStatus(''),4000);
-      }else{
-        if(msg){msg.hidden=false;msg.textContent='결제창에서 결제를 마쳐 주세요.'}
-        payBtn.disabled=false;
-      }
+      if(msg)msg.textContent='결제 페이지로 이동합니다…';
+      goPortoneCheckout(pay,{name:pay.customer_name,phone:pay.phone||phone});
     }catch(error){
       if(msg){msg.hidden=false;msg.textContent=error.message}
       payBtn.disabled=false;
@@ -978,15 +937,9 @@ document.querySelector('#order').onsubmit=async e=>{
     renderAddressBook();
     localStorage.setItem('unnine-last-order',result.order_id);
     if(result.payment){
-      message.textContent='결제창을 여는 중…';
-      const confirmed=await startCardPayment(result,{name:customer_name,phone});
-      document.querySelector('#cart')?.showModal();
-      if(confirmed){
-        message.innerHTML=`결제가 완료됐습니다. 주문번호 ${esc(confirmed.id)} · ${won(confirmed.total)} <button type="button" class="linkish" id="goto-mypage">내역 보기</button>`;
-        document.querySelector('#goto-mypage')?.addEventListener('click',()=>{document.querySelector('#cart').close();goMypage()});
-      }else{
-        message.textContent=`주문이 생성됐습니다. 번호 ${result.order_id} · 결제창에서 결제를 마쳐 주세요. 끝나면 이 화면으로 돌아옵니다.`;
-      }
+      message.textContent='결제 페이지로 이동합니다…';
+      goPortoneCheckout(result,{name:customer_name,phone});
+      return;
     }else{
       message.textContent=`주문이 접수됐습니다. 번호 ${result.order_id} · 상품 합계 ${won(result.total)} · 결제 대기`;
       message.innerHTML+=` <button type="button" class="linkish" id="goto-mypage">내역 보기</button>`;
