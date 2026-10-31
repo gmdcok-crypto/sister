@@ -72,7 +72,7 @@ async function run() {
       windowType: { pc: 'IFRAME', mobile: 'REDIRECTION' },
       customer: {
         fullName: launch.customer?.name || '고객',
-        ...(phoneDigits ? { phoneNumber: { number: phoneDigits } } : {}),
+        ...(phoneDigits ? { phoneNumber: phoneDigits } : {}),
       },
     });
   } catch (error) {
