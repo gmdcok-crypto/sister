@@ -7,16 +7,4 @@ body{margin:0;min-height:100vh;font:16px/1.6 "Malgun Gothic",sans-serif;color:#2
 .pay-sub{margin:0 0 28px;color:#666;font-size:14px}
 .pay-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 .pay-link{display:inline-block;padding:10px 16px;border-radius:999px;background:#fff;border:1px solid #ffded2;color:#c2410c;text-decoration:none;font-weight:700;font-size:14px}
-/* 포트원/나이스페이 결제창이 항상 최상단에 보이도록 */
-iframe[src*="iamport"],
-iframe[src*="portone"],
-iframe[src*="checkout-service"],
-iframe[src*="nicepay"],
-iframe[src*="tosspayments"]{
-  position:fixed !important;
-  z-index:2147483647 !important;
-}
-body > div:has(> iframe[src*="checkout-service"]),
-body > div:has(> iframe[src*="iamport"]){
-  z-index:2147483646 !important;
-}
+/* 포트원 닫기 버튼이 가려지지 않도록 iframe z-index를 올리지 않음 */
