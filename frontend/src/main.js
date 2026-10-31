@@ -282,6 +282,13 @@ function setAddressFieldsLocked(locked){
   fields.querySelectorAll('[data-postcode-search]').forEach(btn=>{btn.disabled=!!locked;btn.hidden=!!locked});
 }
 
+function showEl(el, on){
+  if(!el)return;
+  el.hidden=!on;
+  if(on) el.removeAttribute('hidden');
+  else el.setAttribute('hidden','');
+}
+
 function renderAddressBook(){
   const box=document.querySelector('#address-book');
   const labelField=document.querySelector('.addr-label-field');
@@ -289,13 +296,19 @@ function renderAddressBook(){
   if(!box)return;
   const loggedIn=!!getToken();
   if(!loggedIn){
-    box.hidden=true;box.innerHTML='';
-    if(labelField)labelField.hidden=true;
-    if(saveWrap)saveWrap.hidden=true;
+    showEl(box, true);
+    box.innerHTML=`
+      <div class="addr-book-guest">
+        <p><strong>주소록</strong></p>
+        <p class="muted">로그인하면 저장한 배송지를 불러와 선택할 수 있습니다.</p>
+        <button type="button" class="account-btn" data-addr-login>로그인하고 주소록 쓰기</button>
+      </div>`;
+    showEl(labelField, false);
+    showEl(saveWrap, false);
     setAddressFieldsLocked(false);
     return;
   }
-  box.hidden=false;
+  showEl(box, true);
   const cards=savedAddresses.map(a=>{
     const on=selectedAddressId===a.id;
     return `<label class="addr-card${on?' is-selected':''}">
@@ -310,18 +323,16 @@ function renderAddressBook(){
   const isNew=selectedAddressId==='new'||!savedAddresses.length;
   box.innerHTML=`
     <div class="addr-book-head">
-      <p>등록된 배송지에서 선택하거나 새 주소를 입력하세요.</p>
+      <p><strong>주소록</strong> · 등록된 배송지에서 선택하거나 새 주소를 입력하세요.</p>
       <button type="button" class="account-btn" data-addr-new>+ 새 배송지</button>
     </div>
-    <div class="addr-card-list">${cards||'<p class="muted">저장된 배송지가 없습니다. 아래에서 추가해 주세요.</p>'}</div>
+    <div class="addr-card-list">${cards||'<p class="muted">저장된 배송지가 없습니다. 아래에서 주소를 입력한 뒤 <strong>주소록에 저장</strong>을 눌러 주세요.</p>'}</div>
     ${savedAddresses.length?`<label class="addr-card${isNew?' is-selected':''}"><input type="radio" name="address_pick" value="new" ${isNew?'checked':''}><span class="addr-card-body"><strong>새 배송지 입력</strong><span class="muted">받는 분·연락처를 입력하고 주소찾기로 검색합니다.</span></span></label>`:''}
   `;
-  if(labelField)labelField.hidden=!isNew;
-  if(saveWrap){
-    saveWrap.hidden=!isNew;
-    const msg=document.querySelector('#save-address-msg');
-    if(msg){msg.hidden=true;msg.textContent=''}
-  }
+  showEl(labelField, isNew);
+  showEl(saveWrap, isNew);
+  const msg=document.querySelector('#save-address-msg');
+  if(msg){msg.hidden=true;msg.textContent='';msg.setAttribute('hidden','')}
   if(isNew){
     setAddressFieldsLocked(false);
     if(selectedAddressId!=='new'&&!savedAddresses.length){
@@ -834,16 +845,21 @@ document.querySelector('#mypage-view').addEventListener('submit',async e=>{
 
 async function openCart(){
   cartRender();
-  if(getToken()){
-    await loadAddresses();
-    if(selectedAddressId==null){
-      const def=savedAddresses.find(a=>a.is_default)||savedAddresses[0];
-      selectedAddressId=def?def.id:'new';
+  try{
+    if(getToken()){
+      await loadAddresses();
+      if(selectedAddressId==null || (selectedAddressId!=='new'&&!savedAddresses.some(a=>a.id===selectedAddressId))){
+        const def=savedAddresses.find(a=>a.is_default)||savedAddresses[0];
+        selectedAddressId=def?def.id:'new';
+      }
+    }else{
+      savedAddresses=[];
+      selectedAddressId=null;
     }
-    renderAddressBook();
-  }else{
-    renderAddressBook();
+  }catch{
+    savedAddresses=[];
   }
+  renderAddressBook();
   document.querySelector('#cart').showModal();
 }
 document.querySelector('#cart-open').onclick=()=>{openCart()};
@@ -867,6 +883,11 @@ document.querySelector('#order').addEventListener('change',e=>{
   renderAddressBook();
 });
 document.querySelector('#order').addEventListener('click',e=>{
+  if(e.target.closest('[data-addr-login]')){
+    document.querySelector('#cart')?.close();
+    goLogin();
+    return;
+  }
   if(e.target.closest('[data-addr-new]')){
     selectedAddressId='new';
     fillOrderAddress({recipient_name:authUser?.name||'',phone:authUser?.phone||'',address:'',label:''});

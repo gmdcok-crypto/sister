@@ -100,7 +100,11 @@ header.auth-mode,footer.auth-mode{display:none}
 .save-address-wrap .account-btn{justify-self:start}
 .save-address-hint{margin:0;font-size:13px;color:#666}
 #save-address-msg{margin:0;font-size:13px}
-.address-book{margin:0 0 12px}
+.address-book{margin:0 0 14px;padding:12px;border:1px solid #eadfd6;border-radius:14px;background:#fffdfb}
+.address-book[hidden]{display:none !important}
+.addr-book-guest{display:grid;gap:8px}
+.addr-book-guest p{margin:0}
+.addr-book-guest .account-btn{justify-self:start}
 .addr-book-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
 .addr-book-head p{margin:0;font-size:14px;color:#666}
 .addr-card-list{display:grid;gap:8px;margin-bottom:8px}
