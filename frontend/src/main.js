@@ -522,20 +522,83 @@ function setPayStatus(text){
   el.textContent=text;
 }
 
-/** 장바구니 dialog와 분리된 /pay 전용 페이지에서 결제창을 연다. */
-function goPortoneCheckout(result, customer={}){
+/** PC는 일반 팝업 결제창, 모바일은 리다이렉트. */
+async function goPortoneCheckout(result, customer={}, statusEl=null){
   if(!result?.payment) throw new Error('결제 정보가 없습니다.');
+  if(!window.PortOne?.requestPayment) throw new Error('결제 모듈을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.');
+  const pay=result.payment;
+  const phoneDigits=String(customer.phone||'').replace(/\D/g,'');
+  const setStatus=(text)=>{
+    if(statusEl){statusEl.hidden=false;statusEl.textContent=text}
+    else setPayStatus(text);
+  };
   savePayPending(result.order_id, result.payment_id);
-  sessionStorage.setItem(PAY_LAUNCH_KEY, JSON.stringify({
-    order_id: result.order_id,
-    payment_id: result.payment_id,
-    total: result.total,
-    order_name: result.order_name||'언니네닭 주문',
-    payment: result.payment,
-    customer: {name: customer.name||'', phone: customer.phone||''},
-  }));
   document.querySelector('#cart')?.close();
-  location.href='/pay.html';
+  setStatus('결제창을 여는 중입니다…');
+
+  const payParams={
+    storeId: pay.store_id,
+    channelKey: pay.channel_key,
+    paymentId: result.payment_id,
+    orderName: result.order_name||'언니네닭 주문',
+    totalAmount: result.total,
+    currency: pay.currency==='CURRENCY_KRW'?'KRW':(pay.currency||'KRW'),
+    payMethod: pay.pay_method||'CARD',
+    redirectUrl: `${location.origin}/?pay_return=1`,
+    customer: {
+      fullName: customer.name||'고객',
+      ...(phoneDigits?{phoneNumber: phoneDigits}:{}),
+    },
+  };
+
+  let response;
+  try{
+    response=await window.PortOne.requestPayment({
+      ...payParams,
+      windowType: {pc:'POPUP', mobile:'REDIRECTION'},
+    });
+  }catch(firstError){
+    // 팝업 차단 등으로 실패하면 같은 페이지에서 IFRAME으로 한 번 더 시도
+    try{
+      setStatus('팝업을 열 수 없어 화면에서 결제창을 엽니다…');
+      response=await window.PortOne.requestPayment({
+        ...payParams,
+        windowType: {pc:'IFRAME', mobile:'REDIRECTION'},
+      });
+    }catch(error){
+      clearPayPending();
+      setStatus(error?.message||firstError?.message||'결제창을 열지 못했습니다.');
+      setTimeout(()=>setPayStatus(''),5000);
+      throw error;
+    }
+  }
+
+  // 모바일 리다이렉트면 페이지가 이동해 여기까지 오지 않음
+  if(response==null){
+    setStatus('결제창에서 결제를 마쳐 주세요.');
+    return;
+  }
+  if(response.code!=null){
+    clearPayPending();
+    setStatus(response.message||'결제가 취소되었거나 실패했습니다.');
+    setTimeout(()=>setPayStatus(''),5000);
+    return;
+  }
+
+  setStatus('결제 확인 중…');
+  try{
+    const paymentId=response.paymentId||result.payment_id;
+    const confirmed=await confirmPortonePayment(result.order_id, paymentId);
+    clearPayPending();
+    localStorage.setItem('unnine-last-order', confirmed.id);
+    setStatus(`결제가 완료됐습니다. 주문번호 ${confirmed.id}`);
+    setTimeout(()=>setPayStatus(''),4000);
+    goMypage();
+  }catch(error){
+    setStatus(error.message||'결제는 됐을 수 있지만 확인에 실패했습니다. 주문내역을 확인해 주세요.');
+    setTimeout(()=>setPayStatus(''),5000);
+    goMypage();
+  }
 }
 
 async function finishPayReturn(){
@@ -784,8 +847,10 @@ document.querySelector('#mypage-view').addEventListener('click',async e=>{
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({phone}),
       });
-      if(msg)msg.textContent='결제 페이지로 이동합니다…';
-      goPortoneCheckout(pay,{name:pay.customer_name,phone:pay.phone||phone});
+      if(msg)msg.textContent='결제창을 엽니다…';
+      await goPortoneCheckout(pay,{name:pay.customer_name,phone:pay.phone||phone},msg);
+      if(msg)msg.hidden=true;
+      payBtn.disabled=false;
     }catch(error){
       if(msg){msg.hidden=false;msg.textContent=error.message}
       payBtn.disabled=false;
@@ -958,8 +1023,12 @@ document.querySelector('#order').onsubmit=async e=>{
     renderAddressBook();
     localStorage.setItem('unnine-last-order',result.order_id);
     if(result.payment){
-      message.textContent='결제 페이지로 이동합니다…';
-      goPortoneCheckout(result,{name:customer_name,phone});
+      message.textContent='결제창을 엽니다…';
+      try{
+        await goPortoneCheckout(result,{name:customer_name,phone},message);
+      }catch{
+        /* 상태 문구는 goPortoneCheckout에서 처리 */
+      }
       return;
     }else{
       message.textContent=`주문이 접수됐습니다. 번호 ${result.order_id} · 상품 합계 ${won(result.total)} · 결제 대기`;
