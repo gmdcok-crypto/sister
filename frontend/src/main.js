@@ -42,7 +42,7 @@ document.querySelector('#app').innerHTML=`<header class="${parseRoute().view==='
 <section id="product-view" class="product-view" hidden></section>
 <section id="auth-view" class="auth-view" hidden></section>
 <section id="mypage-view" class="mypage-view" hidden></section>
-</main><div id="pay-status" class="pay-status" hidden role="status"></div><div id="pay-cancel-bar" class="pay-cancel-bar" hidden><button type="button" id="pay-cancel-btn">결제 취소</button></div><footer>언니네닭 <p>상품·가격은 제공된 캡처를 바탕으로 등록한 초기 자료입니다. 상품 사진은 AI로 제작한 연출 이미지입니다.</p></footer><dialog id="cart"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><div id="address-book" class="address-book" hidden></div><div id="address-fields" class="address-fields"><label class="addr-label-field" hidden>배송지명<input name="label" maxlength="40" placeholder="예: 집, 회사" autocomplete="off"></label><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><div class="addr-search-block"><label class="addr-zip-label">우편번호<span class="addr-zip-row"><input name="zonecode" readonly maxlength="10" placeholder="우편번호" autocomplete="postal-code"><button type="button" class="account-btn" data-postcode-search>주소찾기</button></span></label><label>기본 주소<input name="address_base" readonly required minlength="5" maxlength="400" placeholder="주소찾기로 검색해 주세요" autocomplete="street-address"></label><label>상세 주소<input name="address_detail" maxlength="200" placeholder="동·호수 등 상세주소" autocomplete="address-line2"></label><input type="hidden" name="address" value=""></div><div id="save-address-wrap" class="save-address-wrap" hidden><button type="button" class="account-btn" data-save-address>주소록에 저장</button><p class="muted save-address-hint">입력한 배송지를 주소록에 남겨 다음 주문에서 선택할 수 있습니다.</p><p class="auth-msg" id="save-address-msg" hidden role="status"></p></div></div><p id="checkout-note">주문 접수 후 카드 결제를 진행합니다. 배송비는 별도 안내될 수 있습니다.</p><button id="submit" type="submit">주문 접수</button><p id="order-message" role="status"></p></form></dialog>`;
+</main><div id="pay-status" class="pay-status" hidden role="status"></div><div id="pay-cancel-bar" class="pay-cancel-bar" hidden><button type="button" id="pay-cancel-btn">결제 취소</button></div><footer>언니네닭 <p>상품·가격은 제공된 캡처를 바탕으로 등록한 초기 자료입니다. 상품 사진은 AI로 제작한 연출 이미지입니다.</p></footer><dialog id="cart"><div class="cart-scroll"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><div id="address-book" class="address-book" hidden></div><div id="address-fields" class="address-fields"><label class="addr-label-field" hidden>배송지명<input name="label" maxlength="40" placeholder="예: 집, 회사" autocomplete="off"></label><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><div class="addr-search-block"><label class="addr-zip-label">우편번호<span class="addr-zip-row"><input name="zonecode" readonly maxlength="10" placeholder="우편번호" autocomplete="postal-code"><button type="button" class="account-btn" data-postcode-search>주소찾기</button></span></label><label>기본 주소<input name="address_base" readonly required minlength="5" maxlength="400" placeholder="주소찾기로 검색해 주세요" autocomplete="street-address"></label><label>상세 주소<input name="address_detail" maxlength="200" placeholder="동·호수 등 상세주소" autocomplete="address-line2"></label><input type="hidden" name="address" value=""></div><div id="save-address-wrap" class="save-address-wrap" hidden><button type="button" class="account-btn" data-save-address>주소록에 저장</button><p class="muted save-address-hint">입력한 배송지를 주소록에 남겨 다음 주문에서 선택할 수 있습니다.</p><p class="auth-msg" id="save-address-msg" hidden role="status"></p></div></div><p id="checkout-note">주문 접수 후 카드 결제를 진행합니다. 배송비는 별도 안내될 수 있습니다.</p><p id="order-message" role="status"></p></form></div><div class="cart-checkout-bar"><button id="submit" type="submit" form="order">주문 접수</button></div></dialog>`;
 
 function persist(){localStorage.setItem('unnine-cart',JSON.stringify(cart));document.querySelector('#count').textContent=cart.reduce((n,x)=>n+x.quantity,0)}
 function parseRoute(){
@@ -290,12 +290,29 @@ function showEl(el, on){
   else el.setAttribute('hidden','');
 }
 
-function renderAddressBook(){
+function setAddressFieldsVisible(on){
+  const fields=document.querySelector('#address-fields');
+  showEl(fields, on);
+  if(on) fields?.classList.add('is-editing');
+  else fields?.classList.remove('is-editing');
+}
+
+function scrollAddressFieldsIntoView(){
+  const fields=document.querySelector('#address-fields');
+  if(!fields||fields.hidden)return;
+  requestAnimationFrame(()=>{
+    fields.scrollIntoView({behavior:'smooth', block:'start'});
+    fields.querySelector('input[name="customer_name"]')?.focus();
+  });
+}
+
+function renderAddressBook(opts={}){
   const box=document.querySelector('#address-book');
   const labelField=document.querySelector('.addr-label-field');
   const saveWrap=document.querySelector('#save-address-wrap');
   if(!box)return;
   const loggedIn=!!getToken();
+  const fields=document.querySelector('#address-fields');
   if(!loggedIn){
     showEl(box, true);
     box.innerHTML=`
@@ -306,14 +323,16 @@ function renderAddressBook(){
       </div>`;
     showEl(labelField, false);
     showEl(saveWrap, false);
+    setAddressFieldsVisible(true);
     setAddressFieldsLocked(false);
     return;
   }
   showEl(box, true);
+  const isNew=selectedAddressId==='new'||!savedAddresses.length;
   const cards=savedAddresses.map(a=>{
-    const on=selectedAddressId===a.id;
+    const on=!isNew&&selectedAddressId===a.id;
     return `<label class="addr-card${on?' is-selected':''}">
-      <input type="radio" name="address_pick" value="${a.id}" ${on?'checked':''}>
+      <input type="radio" name="address_pick" value="${a.id}" ${on?'checked':''} ${isNew?'disabled':''}>
       <span class="addr-card-body">
         <span class="addr-card-top"><strong>${esc(a.label||'배송지')}</strong>${a.is_default?'<em>기본</em>':''}</span>
         <span>${esc(a.recipient_name)} · ${esc(a.phone)}</span>
@@ -321,28 +340,53 @@ function renderAddressBook(){
       </span>
     </label>`;
   }).join('');
-  const isNew=selectedAddressId==='new'||!savedAddresses.length;
   box.innerHTML=`
     <div class="addr-book-head">
-      <p><strong>주소록</strong> · 등록된 배송지에서 선택하거나 새 주소를 입력하세요.</p>
-      <button type="button" class="account-btn" data-addr-new>+ 새 배송지</button>
+      <p><strong>주소록</strong> · 배송지를 선택하세요.</p>
     </div>
-    <div class="addr-card-list">${cards||'<p class="muted">저장된 배송지가 없습니다. 아래에서 주소를 입력한 뒤 <strong>주소록에 저장</strong>을 눌러 주세요.</p>'}</div>
-    ${savedAddresses.length?`<label class="addr-card${isNew?' is-selected':''}"><input type="radio" name="address_pick" value="new" ${isNew?'checked':''}><span class="addr-card-body"><strong>새 배송지 입력</strong><span class="muted">받는 분·연락처를 입력하고 주소찾기로 검색합니다.</span></span></label>`:''}
+    <div class="addr-card-list">${cards||'<p class="muted">저장된 배송지가 없습니다. 아래 배송지 추가로 입력해 주세요.</p>'}</div>
+    <label class="addr-add-check${isNew?' is-on':''}">
+      <input type="checkbox" name="address_add" ${isNew?'checked':''}>
+      <span>배송지 추가 · 새 주소를 직접 입력합니다</span>
+    </label>
   `;
   showEl(labelField, isNew);
   showEl(saveWrap, isNew);
   const msg=document.querySelector('#save-address-msg');
   if(msg){msg.hidden=true;msg.textContent='';msg.setAttribute('hidden','')}
   if(isNew){
+    setAddressFieldsVisible(true);
     setAddressFieldsLocked(false);
-    if(selectedAddressId!=='new'&&!savedAddresses.length){
+    if(opts.resetNew){
       fillOrderAddress({recipient_name:authUser?.name||'',phone:authUser?.phone||'',address:'',label:''});
+    }else if(!savedAddresses.length){
+      const form=document.querySelector('#order');
+      if(form && !String(form.customer_name?.value||'').trim()){
+        fillOrderAddress({recipient_name:authUser?.name||'',phone:authUser?.phone||'',address:'',label:''});
+      }
     }
+    if(opts.scroll) scrollAddressFieldsIntoView();
   }else{
     const picked=savedAddresses.find(a=>a.id===selectedAddressId);
     if(picked)fillOrderAddress(picked);
-    setAddressFieldsLocked(true);
+    setAddressFieldsLocked(false);
+    setAddressFieldsVisible(false);
+    // 숨긴 상태에서도 주문 제출용 값은 유지
+    if(fields){
+      fields.querySelectorAll('input[required]').forEach(el=>{
+        el.dataset.wasRequired='1';
+        el.required=false;
+      });
+    }
+  }
+  if(isNew && fields){
+    fields.querySelectorAll('input[data-was-required]').forEach(el=>{
+      el.required=true;
+      el.removeAttribute('data-was-required');
+    });
+    // address_base는 항상 required로 복구
+    const base=fields.querySelector('input[name="address_base"]');
+    if(base) base.required=true;
   }
 }
 
@@ -1046,9 +1090,20 @@ document.querySelector('#order').addEventListener('click',e=>{
   openKakaoPostcode(data=>applyPostcodeResult(document.querySelector('#order'), data));
 });
 document.querySelector('#order').addEventListener('change',e=>{
+  if(e.target.name==='address_add'){
+    if(e.target.checked){
+      selectedAddressId='new';
+      renderAddressBook({resetNew:true, scroll:true});
+    }else{
+      const def=savedAddresses.find(a=>a.is_default)||savedAddresses[0];
+      selectedAddressId=def?def.id:'new';
+      renderAddressBook();
+    }
+    return;
+  }
   if(e.target.name!=='address_pick')return;
   selectedAddressId=e.target.value==='new'?'new':+e.target.value;
-  renderAddressBook();
+  renderAddressBook({scroll:selectedAddressId==='new', resetNew:selectedAddressId==='new'});
 });
 document.querySelector('#order').addEventListener('click',e=>{
   if(e.target.closest('[data-addr-login]')){
@@ -1058,8 +1113,7 @@ document.querySelector('#order').addEventListener('click',e=>{
   }
   if(e.target.closest('[data-addr-new]')){
     selectedAddressId='new';
-    fillOrderAddress({recipient_name:authUser?.name||'',phone:authUser?.phone||'',address:'',label:''});
-    renderAddressBook();
+    renderAddressBook({resetNew:true, scroll:true});
     return;
   }
   if(!e.target.closest('[data-save-address]'))return;
