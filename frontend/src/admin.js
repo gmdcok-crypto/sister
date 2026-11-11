@@ -37,7 +37,7 @@ app.innerHTML = `
         <button type="button" id="login">로그인</button>
         <button type="button" id="logout" class="secondary" hidden>로그아웃</button>
         <button type="button" id="new-product" class="secondary" hidden>새 상품 추가</button>
-        <a href="/">스토어로</a>
+        <a href="/">쇼핑몰로</a>
       </div>
     </div>
     <nav class="tabs" id="tabs" hidden>
