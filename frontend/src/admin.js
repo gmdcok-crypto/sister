@@ -22,6 +22,7 @@ let customers = []
 let customerDetail = null
 let customerQuery = ''
 let tab = 'products'
+let productCategoryId = 0
 
 const app = document.querySelector('#app')
 app.innerHTML = `
@@ -256,7 +257,7 @@ function setTab(next) {
   document.querySelector('#new-product').hidden = tab !== 'products' || !categories.length
   const titles = { products: '상품 관리', orders: '주문 관리', customers: '고객 관리' }
   document.querySelector('#page-title').textContent = titles[tab]
-  if (tab === 'products') setStatus(`상품 ${products.filter((p) => p.id !== 'new').length}개`)
+  if (tab === 'products') updateProductStatus()
   if (tab === 'orders') {
     renderOrders()
     setStatus(`주문 ${orders.length}건`)
@@ -267,9 +268,98 @@ function setTab(next) {
   }
 }
 
+function sortedProducts() {
+  const rank = new Map(categories.map((c, i) => [c.id, i]))
+  return [...products].sort((a, b) => {
+    if (a.id === 'new') return -1
+    if (b.id === 'new') return 1
+    const ca = rank.get(a.category_id) ?? 1e9
+    const cb = rank.get(b.category_id) ?? 1e9
+    return ca - cb || Number(a.id) - Number(b.id)
+  })
+}
+
+function filteredProducts() {
+  const list = sortedProducts()
+  if (!productCategoryId) return list
+  return list.filter((p) => p.id === 'new' || p.category_id === productCategoryId)
+}
+
+function updateProductStatus() {
+  const total = products.filter((p) => p.id !== 'new').length
+  if (!productCategoryId) {
+    setStatus(`상품 ${total}개 · 카테고리별 보기`)
+    return
+  }
+  const cat = categories.find((c) => c.id === productCategoryId)
+  const count = products.filter((p) => p.id !== 'new' && p.category_id === productCategoryId).length
+  setStatus(`${esc(cat?.name || '카테고리')} ${count}개 / 전체 ${total}개`)
+}
+
+function categoryFilterHtml() {
+  const items = [{ id: 0, name: '전체상품', image: '' }, ...categories]
+  return `
+    <div class="product-filter" role="tablist" aria-label="상품 카테고리">
+      ${items.map((c) => {
+        const count = c.id
+          ? products.filter((p) => p.id !== 'new' && p.category_id === c.id).length
+          : products.filter((p) => p.id !== 'new').length
+        const on = productCategoryId === c.id
+        const img = c.image ? `<img src="${esc(c.image)}" alt="">` : ''
+        return `<button type="button" class="cat-chip${on ? ' is-active' : ''}" data-product-cat="${c.id}" role="tab" aria-selected="${on}">
+          ${img}<span>${esc(c.name)}</span><em>${count}</em>
+        </button>`
+      }).join('')}
+    </div>
+  `
+}
+
 function renderProducts() {
-  document.querySelector('#panel-products').innerHTML = products.map(card).join('') || '<p>등록된 상품이 없습니다.</p>'
+  const panel = document.querySelector('#panel-products')
+  const list = filteredProducts()
+  if (!products.length) {
+    panel.innerHTML = `${categoryFilterHtml()}<p>등록된 상품이 없습니다.</p>`
+    document.querySelector('#new-product').hidden = tab !== 'products' || !categories.length
+    updateProductStatus()
+    return
+  }
+  let body = ''
+  if (!productCategoryId) {
+    const draft = list.filter((p) => p.id === 'new')
+    const byCat = new Map(categories.map((c) => [c.id, []]))
+    const orphan = []
+    for (const p of list) {
+      if (p.id === 'new') continue
+      if (byCat.has(p.category_id)) byCat.get(p.category_id).push(p)
+      else orphan.push(p)
+    }
+    body = draft.map(card).join('')
+    for (const c of categories) {
+      const rows = byCat.get(c.id) || []
+      if (!rows.length) continue
+      body += `<section class="product-group" data-group="${c.id}">
+        <header class="product-group-head">
+          ${c.image ? `<img src="${esc(c.image)}" alt="">` : ''}
+          <div>
+            <h2>${esc(c.name)}</h2>
+            <p>${rows.length}개 상품</p>
+          </div>
+        </header>
+        <div class="product-group-list">${rows.map(card).join('')}</div>
+      </section>`
+    }
+    if (orphan.length) {
+      body += `<section class="product-group">
+        <header class="product-group-head"><div><h2>기타</h2><p>${orphan.length}개 상품</p></div></header>
+        <div class="product-group-list">${orphan.map(card).join('')}</div>
+      </section>`
+    }
+  } else {
+    body = list.map(card).join('') || '<p class="empty-cat">이 카테고리에 등록된 상품이 없습니다.</p>'
+  }
+  panel.innerHTML = `${categoryFilterHtml()}${body}`
   document.querySelector('#new-product').hidden = tab !== 'products' || !categories.length
+  updateProductStatus()
 }
 
 function renderOrders() {
@@ -446,6 +536,13 @@ document.querySelector('#new-product').onclick = () => {
 }
 
 document.querySelector('#panel-products').addEventListener('click', async (e) => {
+  const catBtn = e.target.closest('[data-product-cat]')
+  if (catBtn) {
+    productCategoryId = Number(catBtn.dataset.productCat) || 0
+    renderProducts()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    return
+  }
   if (e.target.closest('[data-cancel-new]')) {
     products = products.filter((p) => p.id !== 'new')
     renderProducts()
