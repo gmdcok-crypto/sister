@@ -204,6 +204,27 @@ function formatWhen(value) {
   return d.toLocaleString('ko-KR')
 }
 
+function formatOrderWhen(value) {
+  if (!value) return ''
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return String(value)
+  return d.toLocaleString('ko-KR', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}
+
+function orderNeedsAction(o) {
+  if (o.status === 'pending_payment') return '결제대기'
+  if (o.status === 'paid') return '상품준비'
+  if (o.status === 'preparing' && !o.tracking_number) return '운송장'
+  if (o.status === 'shipping' && !o.tracking_number) return '운송장'
+  return ''
+}
+
 function statusLabel(status) {
   return STATUSES.find(([value]) => value === status)?.[1] || status
 }
@@ -237,76 +258,108 @@ function filteredOrders() {
 function orderToolbarHtml() {
   const counts = orderStatusCounts()
   const custom = hasCustomOrderDates()
+  const list = filteredOrders()
   const periods = ORDER_PERIODS.map(([value, label]) => {
     const on = !custom && orderPeriod === value
     return `<button type="button" class="order-period${on ? ' is-active' : ''}" data-order-period="${value}">${label}</button>`
   }).join('')
-  const chips = [['all', '전체'], ...STATUSES].map(([value, label]) => {
+  const statusCards = [['all', '전체'], ...STATUSES].map(([value, label]) => {
     const on = orderStatusFilter === value
-    return `<button type="button" class="order-chip${on ? ' is-active' : ''}" data-order-filter="${value}">
-      <span>${label}</span><em>${counts[value] || 0}</em>
+    const count = counts[value] || 0
+    return `<button type="button" class="order-stat${on ? ' is-active' : ''}" data-order-filter="${value}">
+      <strong>${count}</strong>
+      <span>${label}</span>
     </button>`
   }).join('')
   const periodLabel = custom
     ? `${orderDateFrom || '…'} ~ ${orderDateTo || '…'}`
     : (ORDER_PERIODS.find(([v]) => v === orderPeriod)?.[1] || '최근 7일')
   const maxDay = kstTodayIso()
+  const resetOn = orderQuery || orderStatusFilter !== 'all' || orderPeriod !== '7d' || custom
   return `
     <div class="order-console">
-      <div class="order-period-row" role="tablist" aria-label="조회 기간">
-        <span class="order-period-label">기간</span>
-        ${periods}
+      <section class="order-box">
+        <div class="order-box-title">
+          <h2>1. 언제 주문?</h2>
+          <p>빠른 기간을 고르거나, 달력으로 직접 지정하세요.</p>
+        </div>
+        <div class="order-period-row" role="tablist" aria-label="조회 기간">${periods}</div>
+        <div class="order-calendar-row">
+          <label class="order-date-field">시작일
+            <input id="order-date-from" type="date" value="${esc(orderDateFrom)}" max="${esc(maxDay)}">
+          </label>
+          <span class="order-date-sep">~</span>
+          <label class="order-date-field">종료일
+            <input id="order-date-to" type="date" value="${esc(orderDateTo)}" max="${esc(maxDay)}">
+          </label>
+          <button type="button" class="secondary${custom ? ' is-active-date' : ''}" data-order-calendar>달력 적용</button>
+        </div>
+      </section>
+
+      <section class="order-box">
+        <div class="order-box-title">
+          <h2>2. 어떤 상태?</h2>
+          <p>처리가 필요한 주문을 상태로 바로 골라보세요.</p>
+        </div>
+        <div class="order-stats" role="tablist" aria-label="주문 상태">${statusCards}</div>
+      </section>
+
+      <section class="order-box order-box-search">
+        <div class="order-box-title">
+          <h2>3. 검색</h2>
+          <p>주문번호, 이름, 연락처, 운송장으로 찾습니다.</p>
+        </div>
+        <div class="order-search">
+          <input id="order-q" type="search" value="${esc(orderQuery)}" placeholder="예: 홍길동 / 010- / 운송장번호" autocomplete="off">
+          <button type="button" data-order-search>검색</button>
+          ${resetOn ? '<button type="button" class="secondary" data-order-reset>조건 초기화</button>' : ''}
+        </div>
+      </section>
+
+      <div class="order-result-bar">
+        <div>
+          <strong>${esc(periodLabel)}</strong>
+          <span>${orderStatusFilter === 'all' ? '전체 상태' : statusLabel(orderStatusFilter)} · 결과 <b>${list.length}</b>건</span>
+        </div>
+        <span class="muted">${ordersLoading ? '불러오는 중…' : `서버 로드 ${orders.length}건 · 최대 500건`}</span>
       </div>
-      <div class="order-calendar-row">
-        <span class="order-period-label">달력</span>
-        <label class="order-date-field">시작
-          <input id="order-date-from" type="date" value="${esc(orderDateFrom)}" max="${esc(maxDay)}">
-        </label>
-        <span class="order-date-sep">~</span>
-        <label class="order-date-field">종료
-          <input id="order-date-to" type="date" value="${esc(orderDateTo)}" max="${esc(maxDay)}">
-        </label>
-        <button type="button" class="secondary${custom ? ' is-active-date' : ''}" data-order-calendar>기간 적용</button>
-      </div>
-      <div class="order-chips" role="tablist" aria-label="주문 상태">${chips}</div>
-      <div class="order-search">
-        <input id="order-q" type="search" value="${esc(orderQuery)}" placeholder="주문번호·구매자·연락처·운송장 검색" autocomplete="off">
-        <button type="button" class="secondary" data-order-search>조회</button>
-        ${orderQuery || orderStatusFilter !== 'all' || orderPeriod !== '7d' || custom ? '<button type="button" class="secondary" data-order-reset>초기화</button>' : ''}
-      </div>
-      <p class="order-period-hint muted">${periodLabel} 기준 · 최대 500건 · ${ordersLoading ? '불러오는 중…' : `${orders.length}건 로드됨`}</p>
     </div>
   `
 }
 
 function orderRow(o) {
   const open = openOrderId === o.id
+  const action = orderNeedsAction(o)
   const items = (o.items || []).map((i) => {
     const addons = (i.addons || []).map((a) => `${esc(a.label)}×${a.quantity}`).join(', ')
     return `<li>${esc(i.name)} / ${esc(i.option || '-')} × ${i.quantity} · ${won(i.unit_price)}${addons ? `<br><span class="muted">추가: ${addons}</span>` : ''}</li>`
   }).join('')
   return `
-    <article class="order-row${open ? ' is-open' : ''}" data-order="${esc(o.id)}">
+    <article class="order-row${open ? ' is-open' : ''}${action ? ' needs-action' : ''}" data-order="${esc(o.id)}">
       <button type="button" class="order-row-main" data-toggle-order="${esc(o.id)}">
-        <span class="o-date">${esc(formatWhen(o.created_at))}</span>
-        <span class="o-id"><code>${esc(o.id)}</code></span>
+        <span class="o-status">
+          <span class="status-pill status-${esc(o.status)}">${esc(o.status_label || statusLabel(o.status))}</span>
+          ${action ? `<em class="action-tag">${esc(action)}</em>` : ''}
+        </span>
         <span class="o-buyer">
           <strong>${esc(o.customer_name)}</strong>
           <em>${esc(o.phone || '-')}</em>
         </span>
-        <span class="o-items">${esc(orderItemSummary(o))}</span>
+        <span class="o-items">
+          <strong>${esc(orderItemSummary(o))}</strong>
+          <em>${esc(formatOrderWhen(o.created_at))} · ${esc(o.id)}</em>
+        </span>
         <span class="o-total">${won(o.total)}</span>
-        <span class="o-status"><span class="status-pill status-${esc(o.status)}">${esc(o.status_label || statusLabel(o.status))}</span></span>
-        <span class="o-track">${o.tracking_number ? esc(o.tracking_number) : '<em class="muted">운송장 없음</em>'}</span>
-        <span class="o-more">${open ? '접기' : '상세'}</span>
+        <span class="o-track">${o.tracking_number ? `CJ ${esc(o.tracking_number)}` : '<em class="muted">운송장 없음</em>'}</span>
+        <span class="o-more">${open ? '접기 ▲' : '처리하기 ▼'}</span>
       </button>
       <div class="order-row-detail" ${open ? '' : 'hidden'}>
         <div class="order-detail-grid">
           <div>
-            <h3>배송 정보</h3>
-            <p><strong>받는 분</strong> ${esc(o.customer_name)} · ${esc(o.phone)}</p>
-            <p><strong>주소</strong> ${esc(o.address)}</p>
-            <p><strong>택배</strong> CJ대한통운 ${o.tracking_number ? esc(o.tracking_number) : '미등록'}</p>
+            <h3>배송지</h3>
+            <p><strong>${esc(o.customer_name)}</strong> · ${esc(o.phone)}</p>
+            <p>${esc(o.address)}</p>
+            <p class="muted">주문 ${esc(formatWhen(o.created_at))}</p>
           </div>
           <div>
             <h3>주문 상품</h3>
@@ -314,14 +367,14 @@ function orderRow(o) {
           </div>
         </div>
         <div class="order-actions">
-          <label>상태
+          <label>진행 상태
             <select data-order-status="${esc(o.id)}">
               ${STATUSES.map(([value, label]) => `<option value="${value}" ${o.status === value ? 'selected' : ''}>${label}</option>`).join('')}
             </select>
           </label>
           <button type="button" data-save-status="${esc(o.id)}">상태 저장</button>
           <label>CJ 운송장
-            <input class="tracking-input" data-tracking="${esc(o.id)}" value="${esc(o.tracking_number || '')}" inputmode="numeric" maxlength="20" placeholder="운송장번호">
+            <input class="tracking-input" data-tracking="${esc(o.id)}" value="${esc(o.tracking_number || '')}" inputmode="numeric" maxlength="20" placeholder="숫자만 입력">
           </label>
           <button type="button" data-save-tracking="${esc(o.id)}">운송장 저장</button>
           <span class="msg" data-order-msg hidden></span>
@@ -540,10 +593,14 @@ function renderOrders() {
     ${orderToolbarHtml()}
     <div class="order-table" role="table" aria-label="주문 목록">
       <div class="order-table-head" role="row">
-        <span>주문일시</span><span>주문번호</span><span>구매자</span><span>상품</span><span>금액</span><span>상태</span><span>운송장</span><span></span>
+        <span>상태</span><span>구매자</span><span>상품 / 주문정보</span><span>금액</span><span>운송장</span><span>처리</span>
       </div>
       <div class="order-table-body">
-        ${list.length ? list.map(orderRow).join('') : '<p class="empty-cat">조건에 맞는 주문이 없습니다.</p>'}
+        ${list.length ? list.map(orderRow).join('') : `
+          <div class="empty-cat">
+            <strong>조건에 맞는 주문이 없습니다.</strong>
+            <p>기간·상태를 바꾸거나 검색어를 지워 보세요.</p>
+          </div>`}
       </div>
     </div>
   `
