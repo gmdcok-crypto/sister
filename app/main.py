@@ -1219,16 +1219,46 @@ def admin_order_period_bounds(period: str):
     )
 
 
+def admin_order_date_bounds(date_from: str = '', date_to: str = ''):
+    """Parse YYYY-MM-DD (KST calendar days) into naive-UTC [start, end)."""
+    def parse_day(value: str):
+        text = (value or '').strip()
+        if not text:
+            return None
+        try:
+            day = datetime.strptime(text[:10], '%Y-%m-%d').replace(tzinfo=KST)
+        except ValueError as exc:
+            raise HTTPException(422, '날짜는 YYYY-MM-DD 형식이어야 합니다.') from exc
+        return day
+
+    start_day = parse_day(date_from)
+    end_day = parse_day(date_to)
+    if start_day is None and end_day is None:
+        return None, None
+    if start_day and end_day and end_day < start_day:
+        raise HTTPException(422, '종료일이 시작일보다 빠를 수 없습니다.')
+    start = start_day.astimezone(timezone.utc).replace(tzinfo=None) if start_day else None
+    # inclusive end date -> next day exclusive
+    end = (end_day + timedelta(days=1)).astimezone(timezone.utc).replace(tzinfo=None) if end_day else None
+    return start, end
+
+
 @app.get('/api/admin/orders')
 def admin_orders(
     period: str = '7d',
+    date_from: str = '',
+    date_to: str = '',
     status: str = '',
     q: str = '',
     _: None = Depends(require_admin),
     session: Session = Depends(db),
 ):
     stmt = select(Order)
-    start, end = admin_order_period_bounds(period)
+    custom_start, custom_end = admin_order_date_bounds(date_from, date_to)
+    if custom_start is not None or custom_end is not None:
+        start, end = custom_start, custom_end
+    else:
+        start, end = admin_order_period_bounds(period)
     if start is not None:
         stmt = stmt.where(Order.created_at >= start)
     if end is not None:

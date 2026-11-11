@@ -25,6 +25,8 @@ let tab = 'products'
 let productCategoryId = 0
 let orderStatusFilter = 'all'
 let orderPeriod = '7d'
+let orderDateFrom = ''
+let orderDateTo = ''
 let orderQuery = ''
 let openOrderId = null
 let ordersLoading = false
@@ -35,6 +37,21 @@ const ORDER_PERIODS = [
   ['30d', '최근 30일'],
   ['all', '전체'],
 ]
+
+function kstTodayIso() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+  const get = (t) => parts.find((p) => p.type === t)?.value || ''
+  return `${get('year')}-${get('month')}-${get('day')}`
+}
+
+function hasCustomOrderDates() {
+  return !!(orderDateFrom || orderDateTo)
+}
 
 const app = document.querySelector('#app')
 app.innerHTML = `
@@ -219,8 +236,9 @@ function filteredOrders() {
 
 function orderToolbarHtml() {
   const counts = orderStatusCounts()
+  const custom = hasCustomOrderDates()
   const periods = ORDER_PERIODS.map(([value, label]) => {
-    const on = orderPeriod === value
+    const on = !custom && orderPeriod === value
     return `<button type="button" class="order-period${on ? ' is-active' : ''}" data-order-period="${value}">${label}</button>`
   }).join('')
   const chips = [['all', '전체'], ...STATUSES].map(([value, label]) => {
@@ -229,18 +247,32 @@ function orderToolbarHtml() {
       <span>${label}</span><em>${counts[value] || 0}</em>
     </button>`
   }).join('')
-  const periodLabel = ORDER_PERIODS.find(([v]) => v === orderPeriod)?.[1] || '최근 7일'
+  const periodLabel = custom
+    ? `${orderDateFrom || '…'} ~ ${orderDateTo || '…'}`
+    : (ORDER_PERIODS.find(([v]) => v === orderPeriod)?.[1] || '최근 7일')
+  const maxDay = kstTodayIso()
   return `
     <div class="order-console">
       <div class="order-period-row" role="tablist" aria-label="조회 기간">
         <span class="order-period-label">기간</span>
         ${periods}
       </div>
+      <div class="order-calendar-row">
+        <span class="order-period-label">달력</span>
+        <label class="order-date-field">시작
+          <input id="order-date-from" type="date" value="${esc(orderDateFrom)}" max="${esc(maxDay)}">
+        </label>
+        <span class="order-date-sep">~</span>
+        <label class="order-date-field">종료
+          <input id="order-date-to" type="date" value="${esc(orderDateTo)}" max="${esc(maxDay)}">
+        </label>
+        <button type="button" class="secondary${custom ? ' is-active-date' : ''}" data-order-calendar>기간 적용</button>
+      </div>
       <div class="order-chips" role="tablist" aria-label="주문 상태">${chips}</div>
       <div class="order-search">
         <input id="order-q" type="search" value="${esc(orderQuery)}" placeholder="주문번호·구매자·연락처·운송장 검색" autocomplete="off">
         <button type="button" class="secondary" data-order-search>조회</button>
-        ${orderQuery || orderStatusFilter !== 'all' || orderPeriod !== '7d' ? '<button type="button" class="secondary" data-order-reset>초기화</button>' : ''}
+        ${orderQuery || orderStatusFilter !== 'all' || orderPeriod !== '7d' || custom ? '<button type="button" class="secondary" data-order-reset>초기화</button>' : ''}
       </div>
       <p class="order-period-hint muted">${periodLabel} 기준 · 최대 500건 · ${ordersLoading ? '불러오는 중…' : `${orders.length}건 로드됨`}</p>
     </div>
@@ -452,7 +484,9 @@ function renderProducts() {
 
 function updateOrderStatus() {
   const list = filteredOrders()
-  const periodLabel = ORDER_PERIODS.find(([v]) => v === orderPeriod)?.[1] || '최근 7일'
+  const periodLabel = hasCustomOrderDates()
+    ? `${orderDateFrom || '…'} ~ ${orderDateTo || '…'}`
+    : (ORDER_PERIODS.find(([v]) => v === orderPeriod)?.[1] || '최근 7일')
   if (!orders.length) {
     setStatus(`${periodLabel} 주문 0건`)
     return
@@ -467,7 +501,12 @@ async function loadOrders({ keepOpen = false } = {}) {
   renderOrders()
   try {
     const params = new URLSearchParams()
-    params.set('period', orderPeriod || '7d')
+    if (hasCustomOrderDates()) {
+      if (orderDateFrom) params.set('date_from', orderDateFrom)
+      if (orderDateTo) params.set('date_to', orderDateTo)
+    } else {
+      params.set('period', orderPeriod || '7d')
+    }
     if (orderQuery.trim()) params.set('q', orderQuery.trim())
     orders = await request(`/api/admin/orders?${params}`)
     if (!keepOpen) openOrderId = null
@@ -641,6 +680,8 @@ function clearAdminSession() {
   productCategoryId = 0
   orderStatusFilter = 'all'
   orderPeriod = '7d'
+  orderDateFrom = ''
+  orderDateTo = ''
   orderQuery = ''
   openOrderId = null
   tab = 'products'
@@ -884,6 +925,25 @@ document.querySelector('#panel-orders').addEventListener('click', async (e) => {
   const periodBtn = e.target.closest('[data-order-period]')
   if (periodBtn) {
     orderPeriod = periodBtn.dataset.orderPeriod || '7d'
+    orderDateFrom = ''
+    orderDateTo = ''
+    openOrderId = null
+    loadOrders().catch((error) => setStatus(error.message, true))
+    return
+  }
+  if (e.target.closest('[data-order-calendar]')) {
+    const fromEl = document.querySelector('#order-date-from')
+    const toEl = document.querySelector('#order-date-to')
+    orderDateFrom = fromEl?.value || ''
+    orderDateTo = toEl?.value || ''
+    if (!orderDateFrom && !orderDateTo) {
+      setStatus('시작일 또는 종료일을 선택해 주세요.', true)
+      return
+    }
+    if (orderDateFrom && orderDateTo && orderDateFrom > orderDateTo) {
+      setStatus('종료일이 시작일보다 빠를 수 없습니다.', true)
+      return
+    }
     openOrderId = null
     loadOrders().catch((error) => setStatus(error.message, true))
     return
@@ -905,6 +965,8 @@ document.querySelector('#panel-orders').addEventListener('click', async (e) => {
     orderQuery = ''
     orderStatusFilter = 'all'
     orderPeriod = '7d'
+    orderDateFrom = ''
+    orderDateTo = ''
     openOrderId = null
     loadOrders().catch((error) => setStatus(error.message, true))
     return

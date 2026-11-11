@@ -214,6 +214,10 @@ def test_z_admin_order_status():
     assert any(o['id'] == order_id for o in today)
     week = client.get('/api/admin/orders?period=7d', headers=ADMIN).json()
     assert any(o['id'] == order_id for o in week)
+    from datetime import datetime, timedelta, timezone
+    day = datetime.now(timezone(timedelta(hours=9))).strftime('%Y-%m-%d')
+    ranged = client.get(f'/api/admin/orders?date_from={day}&date_to={day}', headers=ADMIN).json()
+    assert any(o['id'] == order_id for o in ranged)
     changed = client.put(
         f'/api/admin/orders/{order_id}/status',
         headers=ADMIN,
