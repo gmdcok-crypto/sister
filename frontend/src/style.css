@@ -158,7 +158,7 @@ header.auth-mode,footer.auth-mode{display:none}
 .trust-strip-copy h2{margin:0 0 12px;font-size:clamp(28px,3.4vw,40px);line-height:1.2;letter-spacing:-.03em;color:#1a120e}
 .trust-strip-copy p{margin:0 0 18px;color:#555;max-width:34ch}
 .trust-badges{display:flex;gap:16px;align-items:center;margin:0 0 18px;flex-wrap:wrap}
-.trust-haccp{display:block;width:min(180px,46vw);height:auto;background:#fff;border-radius:10px;padding:8px 10px;border:1px solid #eadfd6}
+.trust-haccp{display:block;width:min(108px,28vw);height:auto;background:transparent;border:0;padding:0;border-radius:0}
 .trust-badges ul{margin:0;padding-left:18px;color:#444;font-size:14px;line-height:1.55}
 .trust-strip-visuals{display:grid;grid-template-columns:1.2fr .9fr;grid-template-rows:1fr 1fr;gap:10px;min-height:280px}
 .trust-shot{margin:0;overflow:hidden;border-radius:18px;background:#d9cfc6}
@@ -171,7 +171,7 @@ footer{display:grid;gap:16px;padding-top:36px;padding-bottom:40px;margin-top:40p
 .footer-brand strong{display:block;font-size:18px;color:#1a120e}
 .footer-brand p{margin:4px 0 0;color:#666;font-size:14px}
 .footer-certs{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.footer-certs img{width:120px;height:auto;background:#fff;border:1px solid #eadfd6;border-radius:8px;padding:6px 8px}
+.footer-certs img{width:72px;height:auto;background:transparent;border:0;border-radius:0;padding:0}
 .footer-certs span{font-size:13px;color:#555;max-width:42ch;line-height:1.45}
 .footer-links{display:flex;flex-wrap:wrap;gap:14px}
 .footer-links a{color:#c2410c;text-decoration:none;font-weight:700;font-size:14px}
@@ -214,8 +214,8 @@ body.is-about footer{max-width:1240px;padding-left:24px;padding-right:24px}
 .about-award-shots figure{margin:0;background:#fff;border-radius:22px;padding:18px;box-shadow:0 16px 40px rgba(26,18,14,.1)}
 .about-award-shots img{display:block;width:100%;height:auto;max-height:min(72vh,760px);object-fit:contain;border-radius:12px;background:#f4f1ee}
 .about-certs{max-width:1320px;margin:0 auto;padding:24px 24px 72px;display:grid;gap:28px}
-.about-certs-head{display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:center;background:#fff;border-radius:22px;padding:22px;border:1px solid #eadfd6}
-.about-haccp-mark{display:block;width:100%;height:auto;background:#fff}
+.about-certs-head{display:grid;grid-template-columns:140px 1fr;gap:24px;align-items:center;background:#fff;border-radius:22px;padding:22px;border:1px solid #eadfd6}
+.about-haccp-mark{display:block;width:100%;max-width:140px;height:auto;background:transparent}
 .about-certs-head h2{margin:0 0 10px;font-size:clamp(28px,3.6vw,42px);line-height:1.18;letter-spacing:-.03em}
 .about-certs-head>div>p:last-of-type{margin:0 0 12px;color:#555;max-width:48ch}
 .about-cert-points{margin:0;padding-left:18px;color:#333;line-height:1.7}
