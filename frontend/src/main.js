@@ -48,15 +48,32 @@ const FACILITY={
   award:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/facility/award.webp',
   plaque:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/facility/plaque.webp',
 };
+const CERTS={
+  haccpMark:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/certs/haccp-mark.webp',
+  haccpBadge:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/certs/haccp-badge.webp',
+  haccp:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/certs/haccp-cert.webp',
+  permit:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/certs/permit.webp',
+  sales:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/certs/sales-license.webp',
+  insurance:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/certs/insurance.webp',
+};
 
 document.querySelector('#app').innerHTML=`<header class="${parseRoute().view==='home'?'home-mode':''}"><div class="top"><a href="#/" class="logo" aria-label="언니네닭 홈"><img src="${LOGO}" alt="언니네닭"></a><form id="search"><input aria-label="상품 검색" placeholder="어떤 상품을 찾으세요?"><button>검색</button></form><div class="top-actions"><button type="button" id="about-btn" class="account-btn">회사소개</button><button type="button" id="orders-btn" class="account-btn">주문내역</button><button type="button" id="account-btn" class="account-btn">로그인</button><button id="cart-open">장바구니 <span id="count">0</span></button></div></div></header><main>
 <section id="home-view"><section class="hero" aria-label="메인 소개"><img class="hero-bg" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-premium-fresh.webp?v=1" alt="" decoding="async"><a href="#/" class="hero-logo" aria-label="언니네닭 홈"><img src="${LOGO}" alt="언니네닭"></a><div class="hero-copy"><p class="accent">우리 집 식탁을 위한 장보기</p><h1>맛있는 선택,<br>언니네닭에서.</h1><p>닭고기부터 다양한 육류까지. 필요한 상품을 편리하게 만나보세요.</p><div class="hero-actions"><button id="browse">상품 둘러보기</button><button type="button" class="hero-secondary" id="hero-about">회사 소개</button></div></div></section><div class="category-nav-wrap"><nav id="nav" class="category-nav" aria-label="상품 카테고리"></nav><span class="category-nav-hint" aria-hidden="true">›</span></div><section id="catalog"><div class="title"><h2 id="title">전체상품</h2><span id="results" aria-live="polite"></span></div><p id="error" role="alert"></p><div id="grid" class="grid"></div></section>
-<section class="trust-strip" aria-label="시설과 관리">
+<section class="trust-strip" aria-label="시설과 인증">
   <div class="trust-strip-copy">
-    <p class="trust-kicker">Clean Facility</p>
-    <h2>깨끗하게 다루는 공간에서,<br>식탁까지.</h2>
-    <p>냉장·냉동 시설과 위생 관리로 상품을 보관합니다. 현장의 모습을 회사소개에서 확인해 보세요.</p>
-    <button type="button" class="account-btn" data-go-about>시설 살펴보기</button>
+    <p class="trust-kicker">HACCP · Clean Facility</p>
+    <h2>HACCP 인증으로 지키는<br>안전과 위생.</h2>
+    <p>식육포장처리업 HACCP 인증, 축산물 판매 신고, 생산물배상책임보험까지. 인증과 현장 모습을 회사소개에서 확인해 보세요.</p>
+    <div class="trust-badges">
+      <img class="trust-haccp" src="${CERTS.haccpMark}" alt="HACCP 인증" loading="lazy" decoding="async">
+      <ul>
+        <li>HACCP 적용 인증</li>
+        <li>식육포장처리업 허가</li>
+        <li>축산물판매업 신고</li>
+        <li>생산물배상책임보험</li>
+      </ul>
+    </div>
+    <button type="button" class="account-btn" data-go-about>인증·시설 살펴보기</button>
   </div>
   <div class="trust-strip-visuals">
     <figure class="trust-shot trust-shot-a"><img src="${FACILITY.hall}" alt="언니네닭 작업·보관 공간" loading="lazy" decoding="async"></figure>
@@ -69,7 +86,7 @@ document.querySelector('#app').innerHTML=`<header class="${parseRoute().view==='
 <section id="auth-view" class="auth-view" hidden></section>
 <section id="mypage-view" class="mypage-view" hidden></section>
 <section id="about-view" class="about-view" hidden></section>
-</main><div id="pay-status" class="pay-status" hidden role="status"></div><div id="pay-cancel-bar" class="pay-cancel-bar" hidden><button type="button" id="pay-cancel-btn">결제 취소</button></div><footer><div class="footer-brand"><img src="${LOGO}" alt="" width="72" height="72"><div><strong>언니네닭</strong><p>신선하게 준비하고, 깔끔하게 보관한 뒤 보내 드립니다.</p></div></div><div class="footer-links"><a href="#/about">회사소개</a><a href="#/">쇼핑하기</a><a href="#/mypage">주문내역</a></div><p class="footer-note">상품 사진은 연출 이미지를 포함할 수 있습니다. 실제 상품과 다를 수 있습니다.</p></footer><dialog id="cart"><div class="cart-scroll"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><div id="address-book" class="address-book" hidden></div><div id="address-fields" class="address-fields"><label class="addr-label-field" hidden>배송지명<input name="label" maxlength="40" placeholder="예: 집, 회사" autocomplete="off"></label><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><div class="addr-search-block"><label class="addr-zip-label">우편번호<span class="addr-zip-row"><input name="zonecode" readonly maxlength="10" placeholder="우편번호" autocomplete="postal-code"><button type="button" class="account-btn" data-postcode-search>주소찾기</button></span></label><label>기본 주소<input name="address_base" readonly required minlength="5" maxlength="400" placeholder="주소찾기로 검색해 주세요" autocomplete="street-address"></label><label>상세 주소<input name="address_detail" maxlength="200" placeholder="동·호수 등 상세주소" autocomplete="address-line2"></label><input type="hidden" name="address" value=""></div><div id="save-address-wrap" class="save-address-wrap" hidden><button type="button" class="account-btn" data-save-address>주소록에 저장</button><p class="muted save-address-hint">입력한 배송지를 주소록에 남겨 다음 주문에서 선택할 수 있습니다.</p><p class="auth-msg" id="save-address-msg" hidden role="status"></p></div></div><p id="checkout-note">주문 접수 후 카드 결제를 진행합니다. 배송비는 별도 안내될 수 있습니다.</p><p id="order-message" role="status"></p></form></div><div class="cart-checkout-bar"><button id="submit" type="submit" form="order">주문 접수</button></div></dialog>`;
+</main><div id="pay-status" class="pay-status" hidden role="status"></div><div id="pay-cancel-bar" class="pay-cancel-bar" hidden><button type="button" id="pay-cancel-btn">결제 취소</button></div><footer><div class="footer-brand"><img src="${LOGO}" alt="" width="72" height="72"><div><strong>언니네닭</strong><p>신선하게 준비하고, 깔끔하게 보관한 뒤 보내 드립니다.</p></div></div><div class="footer-certs"><img src="${CERTS.haccpMark}" alt="HACCP" width="120" height="38" loading="lazy"><span>HACCP 인증 · 식육포장처리업 · 축산물판매업 · 생산물배상책임보험</span></div><div class="footer-links"><a href="#/about">회사소개</a><a href="/#/about">인증 자료</a><a href="#/">쇼핑하기</a><a href="#/mypage">주문내역</a></div><p class="footer-note">사업장: 부산광역시 강서구 제도로1041번길 508 · 상품 사진은 연출 이미지를 포함할 수 있습니다.</p></footer><dialog id="cart"><div class="cart-scroll"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><div id="address-book" class="address-book" hidden></div><div id="address-fields" class="address-fields"><label class="addr-label-field" hidden>배송지명<input name="label" maxlength="40" placeholder="예: 집, 회사" autocomplete="off"></label><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><div class="addr-search-block"><label class="addr-zip-label">우편번호<span class="addr-zip-row"><input name="zonecode" readonly maxlength="10" placeholder="우편번호" autocomplete="postal-code"><button type="button" class="account-btn" data-postcode-search>주소찾기</button></span></label><label>기본 주소<input name="address_base" readonly required minlength="5" maxlength="400" placeholder="주소찾기로 검색해 주세요" autocomplete="street-address"></label><label>상세 주소<input name="address_detail" maxlength="200" placeholder="동·호수 등 상세주소" autocomplete="address-line2"></label><input type="hidden" name="address" value=""></div><div id="save-address-wrap" class="save-address-wrap" hidden><button type="button" class="account-btn" data-save-address>주소록에 저장</button><p class="muted save-address-hint">입력한 배송지를 주소록에 남겨 다음 주문에서 선택할 수 있습니다.</p><p class="auth-msg" id="save-address-msg" hidden role="status"></p></div></div><p id="checkout-note">주문 접수 후 카드 결제를 진행합니다. 배송비는 별도 안내될 수 있습니다.</p><p id="order-message" role="status"></p></form></div><div class="cart-checkout-bar"><button id="submit" type="submit" form="order">주문 접수</button></div></dialog>`;
 
 function persist(){localStorage.setItem('unnine-cart',JSON.stringify(cart));document.querySelector('#count').textContent=cart.reduce((n,x)=>n+x.quantity,0)}
 function parseRoute(){
@@ -127,6 +144,41 @@ function renderAbout(){
         </figure>
         <figure>
           <img src="${FACILITY.award}" alt="언니네닭 상장" loading="lazy" decoding="async">
+        </figure>
+      </div>
+    </section>
+
+    <section class="about-certs about-reveal" id="about-certs">
+      <div class="about-certs-head">
+        <img class="about-haccp-mark" src="${CERTS.haccpBadge}" alt="HACCP">
+        <div>
+          <p class="about-kicker">Certification</p>
+          <h2>공식 인증·허가로 증명하는 안전.</h2>
+          <p>언니네는 식육포장처리업 HACCP 적용 인증을 받았으며, 축산물판매업 신고와 생산물배상책임보험으로 책임 있는 유통을 이어갑니다.</p>
+          <ul class="about-cert-points">
+            <li><strong>HACCP</strong> 제2026-2-0347호 · 유효 2026.09.03~2029.09.02</li>
+            <li><strong>식육포장처리업</strong> 허가 · 부산광역시 강서구</li>
+            <li><strong>축산물판매업</strong> 신고 · 축산물유통전문판매업</li>
+            <li><strong>생산물배상책임보험</strong> 가입 · 현대해상</li>
+          </ul>
+        </div>
+      </div>
+      <div class="about-cert-grid">
+        <figure>
+          <img src="${CERTS.haccp}" alt="안전관리인증(HACCP) 적용 인증서" loading="lazy" decoding="async">
+          <figcaption>HACCP 적용 인증서</figcaption>
+        </figure>
+        <figure>
+          <img src="${CERTS.permit}" alt="식육포장처리업 허가증" loading="lazy" decoding="async">
+          <figcaption>식육포장처리업 허가증</figcaption>
+        </figure>
+        <figure>
+          <img src="${CERTS.sales}" alt="축산물판매업 신고필증" loading="lazy" decoding="async">
+          <figcaption>축산물판매업 신고필증</figcaption>
+        </figure>
+        <figure>
+          <img src="${CERTS.insurance}" alt="생산물배상책임보험 가입 확인" loading="lazy" decoding="async">
+          <figcaption>생산물배상책임보험</figcaption>
         </figure>
       </div>
     </section>
