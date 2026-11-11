@@ -2,7 +2,7 @@ import secrets
 import json
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional, Set, Union
 from urllib.parse import urlencode
@@ -1193,10 +1193,60 @@ def serialize_order(session: Session, o: Order) -> dict:
     }
 
 
+KST = timezone(timedelta(hours=9))
+
+
+def admin_order_period_bounds(period: str):
+    """Return naive-UTC [start, end) for Korea-local periods. all -> (None, None)."""
+    key = (period or '7d').strip().lower()
+    now_kst = datetime.now(KST)
+    today = now_kst.replace(hour=0, minute=0, second=0, microsecond=0)
+    if key in ('today', '오늘'):
+        start, end = today, today + timedelta(days=1)
+    elif key in ('yesterday', '어제'):
+        start, end = today - timedelta(days=1), today
+    elif key in ('7d', '7', 'week'):
+        start, end = today - timedelta(days=6), today + timedelta(days=1)
+    elif key in ('30d', '30', 'month'):
+        start, end = today - timedelta(days=29), today + timedelta(days=1)
+    elif key in ('all', '전체', ''):
+        return None, None
+    else:
+        start, end = today - timedelta(days=6), today + timedelta(days=1)
+    return (
+        start.astimezone(timezone.utc).replace(tzinfo=None),
+        end.astimezone(timezone.utc).replace(tzinfo=None),
+    )
+
+
 @app.get('/api/admin/orders')
-def admin_orders(_: None = Depends(require_admin), session: Session = Depends(db)):
-    orders = session.scalars(select(Order).order_by(Order.created_at.desc()).limit(100))
-    return [serialize_order(session, o) for o in orders]
+def admin_orders(
+    period: str = '7d',
+    status: str = '',
+    q: str = '',
+    _: None = Depends(require_admin),
+    session: Session = Depends(db),
+):
+    stmt = select(Order)
+    start, end = admin_order_period_bounds(period)
+    if start is not None:
+        stmt = stmt.where(Order.created_at >= start)
+    if end is not None:
+        stmt = stmt.where(Order.created_at < end)
+    status_key = (status or '').strip()
+    if status_key and status_key != 'all':
+        if status_key not in ORDER_STATUSES:
+            raise HTTPException(422, '지원하지 않는 주문 상태입니다.')
+        stmt = stmt.where(Order.status == status_key)
+    query = (q or '').strip().lower()
+    rows = list(session.scalars(stmt.order_by(Order.created_at.desc()).limit(500)))
+    if query:
+        rows = [
+            o
+            for o in rows
+            if query in f'{o.id} {o.customer_name} {o.phone} {o.address} {o.tracking_number or ""}'.lower()
+        ]
+    return [serialize_order(session, o) for o in rows]
 
 
 @app.put('/api/admin/orders/{order_id}/status')

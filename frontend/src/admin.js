@@ -24,8 +24,17 @@ let customerQuery = ''
 let tab = 'products'
 let productCategoryId = 0
 let orderStatusFilter = 'all'
+let orderPeriod = '7d'
 let orderQuery = ''
 let openOrderId = null
+let ordersLoading = false
+const ORDER_PERIODS = [
+  ['today', '오늘'],
+  ['yesterday', '어제'],
+  ['7d', '최근 7일'],
+  ['30d', '최근 30일'],
+  ['all', '전체'],
+]
 
 const app = document.querySelector('#app')
 app.innerHTML = `
@@ -210,20 +219,30 @@ function filteredOrders() {
 
 function orderToolbarHtml() {
   const counts = orderStatusCounts()
+  const periods = ORDER_PERIODS.map(([value, label]) => {
+    const on = orderPeriod === value
+    return `<button type="button" class="order-period${on ? ' is-active' : ''}" data-order-period="${value}">${label}</button>`
+  }).join('')
   const chips = [['all', '전체'], ...STATUSES].map(([value, label]) => {
     const on = orderStatusFilter === value
     return `<button type="button" class="order-chip${on ? ' is-active' : ''}" data-order-filter="${value}">
       <span>${label}</span><em>${counts[value] || 0}</em>
     </button>`
   }).join('')
+  const periodLabel = ORDER_PERIODS.find(([v]) => v === orderPeriod)?.[1] || '최근 7일'
   return `
     <div class="order-console">
+      <div class="order-period-row" role="tablist" aria-label="조회 기간">
+        <span class="order-period-label">기간</span>
+        ${periods}
+      </div>
       <div class="order-chips" role="tablist" aria-label="주문 상태">${chips}</div>
       <div class="order-search">
         <input id="order-q" type="search" value="${esc(orderQuery)}" placeholder="주문번호·구매자·연락처·운송장 검색" autocomplete="off">
         <button type="button" class="secondary" data-order-search>조회</button>
-        ${orderQuery || orderStatusFilter !== 'all' ? '<button type="button" class="secondary" data-order-reset>초기화</button>' : ''}
+        ${orderQuery || orderStatusFilter !== 'all' || orderPeriod !== '7d' ? '<button type="button" class="secondary" data-order-reset>초기화</button>' : ''}
       </div>
+      <p class="order-period-hint muted">${periodLabel} 기준 · 최대 500건 · ${ordersLoading ? '불러오는 중…' : `${orders.length}건 로드됨`}</p>
     </div>
   `
 }
@@ -328,7 +347,8 @@ function setTab(next) {
   document.querySelector('#page-title').textContent = titles[tab]
   if (tab === 'products') updateProductStatus()
   if (tab === 'orders') {
-    renderOrders()
+    if (!orders.length && adminKey && !ordersLoading) loadOrders()
+    else renderOrders()
   }
   if (tab === 'customers') {
     renderCustomers()
@@ -432,12 +452,29 @@ function renderProducts() {
 
 function updateOrderStatus() {
   const list = filteredOrders()
+  const periodLabel = ORDER_PERIODS.find(([v]) => v === orderPeriod)?.[1] || '최근 7일'
   if (!orders.length) {
-    setStatus('주문 0건')
+    setStatus(`${periodLabel} 주문 0건`)
     return
   }
-  const label = orderStatusFilter === 'all' ? '전체' : statusLabel(orderStatusFilter)
-  setStatus(`${label} ${list.length}건 / 전체 ${orders.length}건`)
+  const label = orderStatusFilter === 'all' ? '상태 전체' : statusLabel(orderStatusFilter)
+  setStatus(`${periodLabel} · ${label} ${list.length}건 (로드 ${orders.length}건)`)
+}
+
+async function loadOrders({ keepOpen = false } = {}) {
+  if (!adminKey) return
+  ordersLoading = true
+  renderOrders()
+  try {
+    const params = new URLSearchParams()
+    params.set('period', orderPeriod || '7d')
+    if (orderQuery.trim()) params.set('q', orderQuery.trim())
+    orders = await request(`/api/admin/orders?${params}`)
+    if (!keepOpen) openOrderId = null
+  } finally {
+    ordersLoading = false
+    renderOrders()
+  }
 }
 
 function renderOrders() {
@@ -603,6 +640,7 @@ function clearAdminSession() {
   customerQuery = ''
   productCategoryId = 0
   orderStatusFilter = 'all'
+  orderPeriod = '7d'
   orderQuery = ''
   openOrderId = null
   tab = 'products'
@@ -636,15 +674,13 @@ async function load() {
   }
   setStatus('로그인 중…')
   try {
-    ;[categories, products, orders] = await Promise.all([
+    ;[categories, products] = await Promise.all([
       request('/api/categories'),
       request('/api/admin/products'),
-      request('/api/admin/orders'),
     ])
-    await loadCustomers()
+    await Promise.all([loadOrders({ keepOpen: false }), loadCustomers()])
     updateAuthUI(true)
     renderProducts()
-    renderOrders()
     renderCustomers()
     setTab(tab)
   } catch (error) {
@@ -845,6 +881,13 @@ document.querySelector('#panel-products').addEventListener('change', async (e) =
 })
 
 document.querySelector('#panel-orders').addEventListener('click', async (e) => {
+  const periodBtn = e.target.closest('[data-order-period]')
+  if (periodBtn) {
+    orderPeriod = periodBtn.dataset.orderPeriod || '7d'
+    openOrderId = null
+    loadOrders().catch((error) => setStatus(error.message, true))
+    return
+  }
   const filterBtn = e.target.closest('[data-order-filter]')
   if (filterBtn) {
     orderStatusFilter = filterBtn.dataset.orderFilter || 'all'
@@ -855,14 +898,15 @@ document.querySelector('#panel-orders').addEventListener('click', async (e) => {
   if (e.target.closest('[data-order-search]')) {
     orderQuery = document.querySelector('#order-q')?.value || ''
     openOrderId = null
-    renderOrders()
+    loadOrders().catch((error) => setStatus(error.message, true))
     return
   }
   if (e.target.closest('[data-order-reset]')) {
     orderQuery = ''
     orderStatusFilter = 'all'
+    orderPeriod = '7d'
     openOrderId = null
-    renderOrders()
+    loadOrders().catch((error) => setStatus(error.message, true))
     return
   }
   const toggle = e.target.closest('[data-toggle-order]')
@@ -947,7 +991,7 @@ document.querySelector('#panel-orders').addEventListener('keydown', (e) => {
   e.preventDefault()
   orderQuery = e.target.value || ''
   openOrderId = null
-  renderOrders()
+  loadOrders().catch((error) => setStatus(error.message, true))
 })
 
 document.querySelector('#panel-customers').addEventListener('click', async (e) => {

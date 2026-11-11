@@ -210,6 +210,10 @@ def test_z_admin_order_status():
     order_id = created.json()['order_id']
     listed = client.get('/api/admin/orders', headers=ADMIN).json()
     assert any(o['id'] == order_id for o in listed)
+    today = client.get('/api/admin/orders?period=today', headers=ADMIN).json()
+    assert any(o['id'] == order_id for o in today)
+    week = client.get('/api/admin/orders?period=7d', headers=ADMIN).json()
+    assert any(o['id'] == order_id for o in week)
     changed = client.put(
         f'/api/admin/orders/{order_id}/status',
         headers=ADMIN,
