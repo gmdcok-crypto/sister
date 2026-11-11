@@ -178,7 +178,6 @@ body.is-about footer{max-width:1240px;padding-left:24px;padding-right:24px}
 .about-hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:78% 28%;transform-origin:78% 28%;transform:scale(1.02);animation:aboutKen 22s ease-in-out infinite alternate}
 .about-hero-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,10,8,.08) 0%,rgba(12,10,8,.28) 38%,rgba(12,10,8,.72) 78%,rgba(12,10,8,.82))}
 .about-hero-inner{position:relative;z-index:1;max-width:1240px;width:100%;margin:0 auto;padding:48px 24px 56px}
-.about-hero-logo{display:block;width:112px;height:auto;margin-bottom:18px;filter:drop-shadow(0 8px 18px rgba(0,0,0,.28))}
 .about-hero h1{margin:0 0 12px;font-size:clamp(34px,5.5vw,58px);line-height:1.12;letter-spacing:-.04em;max-width:14ch}
 .about-hero-inner>p{margin:0 0 22px;max-width:36ch;color:rgba(255,255,255,.88);font-size:17px}
 .about-hero-actions{display:flex;flex-wrap:wrap;gap:10px}
@@ -222,6 +221,5 @@ body.is-about footer{max-width:1240px;padding-left:24px;padding-right:24px}
   .trust-strip{margin-top:36px;gap:18px}
   .about-hero{min-height:70vh}
   .about-hero-bg{object-position:88% 24%;transform:scale(1.01);animation:none}
-  .about-hero-logo{width:88px}
   .about-award-shots{grid-template-columns:1fr}
 }

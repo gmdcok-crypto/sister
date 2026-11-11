@@ -105,7 +105,6 @@ function renderAbout(){
       <img class="about-hero-bg" src="${FACILITY.exterior}" alt="언니네닭 사업장 외관" decoding="async">
       <div class="about-hero-shade"></div>
       <div class="about-hero-inner">
-        <img class="about-hero-logo" src="${LOGO}" alt="언니네닭">
         <p class="about-kicker">Company</p>
         <h1>깨끗하게 다루는 일,<br>언니네닭의 기본입니다.</h1>
         <p>현장의 공간과 보관 환경을 사진으로 보여 드립니다.</p>
