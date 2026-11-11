@@ -34,7 +34,8 @@ app.innerHTML = `
       <h1 id="page-title">상품 관리</h1>
       <div class="auth">
         <input id="admin-key" type="password" placeholder="관리자 키" autocomplete="current-password" value="${esc(adminKey)}">
-        <button type="button" id="login">불러오기</button>
+        <button type="button" id="login">로그인</button>
+        <button type="button" id="logout" class="secondary" hidden>로그아웃</button>
         <button type="button" id="new-product" class="secondary" hidden>새 상품 추가</button>
         <a href="/">스토어로</a>
       </div>
@@ -44,7 +45,7 @@ app.innerHTML = `
       <button type="button" class="tab" data-tab="orders">주문</button>
       <button type="button" class="tab" data-tab="customers">고객</button>
     </nav>
-    <p class="status" id="status">관리자 키를 입력한 뒤 불러오기를 눌러 주세요.</p>
+    <p class="status" id="status">관리자 키를 입력한 뒤 로그인하세요.</p>
     <div id="panel-products" class="panel list"></div>
     <div id="panel-orders" class="panel order-list is-hidden" hidden></div>
     <div id="panel-customers" class="panel customer-panel is-hidden" hidden></div>
@@ -566,14 +567,74 @@ async function loadCustomers() {
   customerDetail = null
 }
 
+function updateAuthUI(loggedIn) {
+  const keyInput = document.querySelector('#admin-key')
+  const loginBtn = document.querySelector('#login')
+  const logoutBtn = document.querySelector('#logout')
+  const tabs = document.querySelector('#tabs')
+  const newProduct = document.querySelector('#new-product')
+  if (keyInput) {
+    keyInput.hidden = !!loggedIn
+    if (loggedIn) keyInput.setAttribute('hidden', '')
+    else keyInput.removeAttribute('hidden')
+  }
+  if (loginBtn) {
+    loginBtn.hidden = !!loggedIn
+    loginBtn.disabled = false
+    loginBtn.textContent = '로그인'
+  }
+  if (logoutBtn) {
+    logoutBtn.hidden = !loggedIn
+    if (loggedIn) logoutBtn.removeAttribute('hidden')
+    else logoutBtn.setAttribute('hidden', '')
+  }
+  if (tabs) tabs.hidden = !loggedIn
+  if (newProduct && !loggedIn) newProduct.hidden = true
+}
+
+function clearAdminSession() {
+  adminKey = ''
+  localStorage.removeItem(KEY)
+  products = []
+  categories = []
+  orders = []
+  customers = []
+  customerDetail = null
+  customerQuery = ''
+  productCategoryId = 0
+  orderStatusFilter = 'all'
+  orderQuery = ''
+  openOrderId = null
+  tab = 'products'
+  const keyInput = document.querySelector('#admin-key')
+  if (keyInput) keyInput.value = ''
+  document.querySelector('#panel-products').innerHTML = ''
+  document.querySelector('#panel-orders').innerHTML = ''
+  document.querySelector('#panel-customers').innerHTML = ''
+  updateAuthUI(false)
+  document.querySelector('#page-title').textContent = '관리자'
+  setStatus('관리자 키를 입력한 뒤 로그인하세요.')
+}
+
 async function load() {
   if (!api) {
     setStatus('VITE_API_URL이 설정되지 않았습니다.', true)
     return
   }
-  adminKey = document.querySelector('#admin-key').value.trim()
+  const keyInput = document.querySelector('#admin-key')
+  adminKey = (keyInput?.value || '').trim()
+  if (!adminKey) {
+    setStatus('관리자 키를 입력해 주세요.', true)
+    keyInput?.focus()
+    return
+  }
   localStorage.setItem(KEY, adminKey)
-  setStatus('불러오는 중…')
+  const loginBtn = document.querySelector('#login')
+  if (loginBtn) {
+    loginBtn.disabled = true
+    loginBtn.textContent = '로그인 중…'
+  }
+  setStatus('로그인 중…')
   try {
     ;[categories, products, orders] = await Promise.all([
       request('/api/categories'),
@@ -581,7 +642,7 @@ async function load() {
       request('/api/admin/orders'),
     ])
     await loadCustomers()
-    document.querySelector('#tabs').hidden = false
+    updateAuthUI(true)
     renderProducts()
     renderOrders()
     renderCustomers()
@@ -590,16 +651,18 @@ async function load() {
     products = []
     orders = []
     customers = []
-    document.querySelector('#tabs').hidden = true
-    document.querySelector('#new-product').hidden = true
-    renderProducts()
-    renderOrders()
-    renderCustomers()
-    setStatus(error.message, true)
+    localStorage.removeItem(KEY)
+    adminKey = ''
+    updateAuthUI(false)
+    document.querySelector('#panel-products').innerHTML = ''
+    document.querySelector('#panel-orders').innerHTML = ''
+    document.querySelector('#panel-customers').innerHTML = ''
+    setStatus(error.message || '로그인에 실패했습니다. 키를 확인해 주세요.', true)
   }
 }
 
 document.querySelector('#login').onclick = load
+document.querySelector('#logout').onclick = () => clearAdminSession()
 document.querySelector('#admin-key').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') load()
 })
@@ -956,4 +1019,6 @@ document.querySelector('#panel-customers').addEventListener('keydown', (e) => {
   document.querySelector('[data-search-customers]')?.click()
 })
 
+updateAuthUI(false)
 if (adminKey) load()
+else setStatus('관리자 키를 입력한 뒤 로그인하세요.')
