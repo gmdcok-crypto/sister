@@ -23,6 +23,9 @@ let customerDetail = null
 let customerQuery = ''
 let tab = 'products'
 let productCategoryId = 0
+let orderStatusFilter = 'all'
+let orderQuery = ''
+let openOrderId = null
 
 const app = document.querySelector('#app')
 app.innerHTML = `
@@ -174,38 +177,103 @@ function formatWhen(value) {
   return d.toLocaleString('ko-KR')
 }
 
-function orderCard(o) {
+function statusLabel(status) {
+  return STATUSES.find(([value]) => value === status)?.[1] || status
+}
+
+function orderItemSummary(o) {
+  const items = o.items || []
+  if (!items.length) return '상품 없음'
+  const first = items[0]
+  const more = items.length - 1
+  const base = `${first.name}${first.option ? `/${first.option}` : ''} ×${first.quantity}`
+  return more > 0 ? `${base} 외 ${more}건` : base
+}
+
+function orderStatusCounts() {
+  const counts = { all: orders.length }
+  for (const [value] of STATUSES) counts[value] = 0
+  for (const o of orders) counts[o.status] = (counts[o.status] || 0) + 1
+  return counts
+}
+
+function filteredOrders() {
+  const q = orderQuery.trim().toLowerCase()
+  return orders.filter((o) => {
+    if (orderStatusFilter !== 'all' && o.status !== orderStatusFilter) return false
+    if (!q) return true
+    const blob = `${o.id} ${o.customer_name} ${o.phone} ${o.address} ${o.tracking_number || ''} ${(o.items || []).map((i) => i.name).join(' ')}`.toLowerCase()
+    return blob.includes(q)
+  })
+}
+
+function orderToolbarHtml() {
+  const counts = orderStatusCounts()
+  const chips = [['all', '전체'], ...STATUSES].map(([value, label]) => {
+    const on = orderStatusFilter === value
+    return `<button type="button" class="order-chip${on ? ' is-active' : ''}" data-order-filter="${value}">
+      <span>${label}</span><em>${counts[value] || 0}</em>
+    </button>`
+  }).join('')
+  return `
+    <div class="order-console">
+      <div class="order-chips" role="tablist" aria-label="주문 상태">${chips}</div>
+      <div class="order-search">
+        <input id="order-q" type="search" value="${esc(orderQuery)}" placeholder="주문번호·구매자·연락처·운송장 검색" autocomplete="off">
+        <button type="button" class="secondary" data-order-search>조회</button>
+        ${orderQuery || orderStatusFilter !== 'all' ? '<button type="button" class="secondary" data-order-reset>초기화</button>' : ''}
+      </div>
+    </div>
+  `
+}
+
+function orderRow(o) {
+  const open = openOrderId === o.id
   const items = (o.items || []).map((i) => {
     const addons = (i.addons || []).map((a) => `${esc(a.label)}×${a.quantity}`).join(', ')
     return `<li>${esc(i.name)} / ${esc(i.option || '-')} × ${i.quantity} · ${won(i.unit_price)}${addons ? `<br><span class="muted">추가: ${addons}</span>` : ''}</li>`
   }).join('')
   return `
-    <article class="order-card" data-order="${esc(o.id)}">
-      <div class="order-head">
-        <div>
-          <h2>${esc(o.customer_name)}</h2>
-          <p class="muted">${formatWhen(o.created_at)} · ${esc(o.id)}</p>
+    <article class="order-row${open ? ' is-open' : ''}" data-order="${esc(o.id)}">
+      <button type="button" class="order-row-main" data-toggle-order="${esc(o.id)}">
+        <span class="o-date">${esc(formatWhen(o.created_at))}</span>
+        <span class="o-id"><code>${esc(o.id)}</code></span>
+        <span class="o-buyer">
+          <strong>${esc(o.customer_name)}</strong>
+          <em>${esc(o.phone || '-')}</em>
+        </span>
+        <span class="o-items">${esc(orderItemSummary(o))}</span>
+        <span class="o-total">${won(o.total)}</span>
+        <span class="o-status"><span class="status-pill status-${esc(o.status)}">${esc(o.status_label || statusLabel(o.status))}</span></span>
+        <span class="o-track">${o.tracking_number ? esc(o.tracking_number) : '<em class="muted">운송장 없음</em>'}</span>
+        <span class="o-more">${open ? '접기' : '상세'}</span>
+      </button>
+      <div class="order-row-detail" ${open ? '' : 'hidden'}>
+        <div class="order-detail-grid">
+          <div>
+            <h3>배송 정보</h3>
+            <p><strong>받는 분</strong> ${esc(o.customer_name)} · ${esc(o.phone)}</p>
+            <p><strong>주소</strong> ${esc(o.address)}</p>
+            <p><strong>택배</strong> CJ대한통운 ${o.tracking_number ? esc(o.tracking_number) : '미등록'}</p>
+          </div>
+          <div>
+            <h3>주문 상품</h3>
+            <ul class="order-items">${items || '<li>상품 없음</li>'}</ul>
+          </div>
         </div>
-        <strong>${won(o.total)}</strong>
-      </div>
-      <div class="order-meta">
-        <p><strong>연락처</strong> ${esc(o.phone)}</p>
-        <p><strong>주소</strong> ${esc(o.address)}</p>
-        <p><strong>배송</strong> CJ대한통운 ${o.tracking_number ? esc(o.tracking_number) : '운송장 등록 전'}</p>
-      </div>
-      <ul class="order-items">${items || '<li>상품 없음</li>'}</ul>
-      <div class="order-actions">
-        <label>상태
-          <select data-order-status="${esc(o.id)}">
-            ${STATUSES.map(([value, label]) => `<option value="${value}" ${o.status === value ? 'selected' : ''}>${label}</option>`).join('')}
-          </select>
-        </label>
-        <button type="button" data-save-status="${esc(o.id)}">상태 저장</button>
-        <label>CJ 운송장
-          <input class="tracking-input" data-tracking="${esc(o.id)}" value="${esc(o.tracking_number || '')}" inputmode="numeric" maxlength="20" placeholder="운송장번호">
-        </label>
-        <button type="button" data-save-tracking="${esc(o.id)}">운송장 저장</button>
-        <span class="msg" data-order-msg hidden></span>
+        <div class="order-actions">
+          <label>상태
+            <select data-order-status="${esc(o.id)}">
+              ${STATUSES.map(([value, label]) => `<option value="${value}" ${o.status === value ? 'selected' : ''}>${label}</option>`).join('')}
+            </select>
+          </label>
+          <button type="button" data-save-status="${esc(o.id)}">상태 저장</button>
+          <label>CJ 운송장
+            <input class="tracking-input" data-tracking="${esc(o.id)}" value="${esc(o.tracking_number || '')}" inputmode="numeric" maxlength="20" placeholder="운송장번호">
+          </label>
+          <button type="button" data-save-tracking="${esc(o.id)}">운송장 저장</button>
+          <span class="msg" data-order-msg hidden></span>
+        </div>
       </div>
     </article>
   `
@@ -260,7 +328,6 @@ function setTab(next) {
   if (tab === 'products') updateProductStatus()
   if (tab === 'orders') {
     renderOrders()
-    setStatus(`주문 ${orders.length}건`)
   }
   if (tab === 'customers') {
     renderCustomers()
@@ -362,27 +429,48 @@ function renderProducts() {
   updateProductStatus()
 }
 
-function renderOrders() {
-  const panel = document.querySelector('#panel-orders')
-  if (orders.length) {
-    panel.innerHTML = orders.map(orderCard).join('')
+function updateOrderStatus() {
+  const list = filteredOrders()
+  if (!orders.length) {
+    setStatus('주문 0건')
     return
   }
+  const label = orderStatusFilter === 'all' ? '전체' : statusLabel(orderStatusFilter)
+  setStatus(`${label} ${list.length}건 / 전체 ${orders.length}건`)
+}
+
+function renderOrders() {
+  const panel = document.querySelector('#panel-orders')
+  if (!orders.length) {
+    panel.innerHTML = `
+      ${orderToolbarHtml()}
+      <section class="empty-orders">
+        <h2>아직 주문이 없습니다</h2>
+        <p>스토어에서 주문이 접수되면 이 탭에 목록이 나타납니다.</p>
+        <ul>
+          <li>고객이 장바구니에서 배송 정보를 넣고 주문합니다.</li>
+          <li>상태 칩으로 결제대기·준비중·배송중을 나눠 봅니다.</li>
+          <li>행을 눌러 상세·운송장을 처리합니다.</li>
+        </ul>
+        <p class="muted">주문이 안 들어오면 Railway의 <code>ORDERS_ENABLED=true</code> 설정을 확인해 주세요.</p>
+      </section>
+    `
+    updateOrderStatus()
+    return
+  }
+  const list = filteredOrders()
   panel.innerHTML = `
-    <section class="empty-orders">
-      <h2>아직 주문이 없습니다</h2>
-      <p>스토어에서 주문이 접수되면 이 탭에 목록이 나타납니다.</p>
-      <ul>
-        <li>고객이 장바구니에서 배송 정보를 넣고 주문합니다.</li>
-        <li>여기에 주문자·연락처·주소·상품·금액이 표시됩니다.</li>
-        <li>상태를 바꿔 결제 대기 → 준비중 → 배송중 → 완료로 관리합니다.</li>
-      </ul>
-      <p class="muted">주문이 안 들어오면 Railway의 <code>ORDERS_ENABLED=true</code> 설정을 확인해 주세요.</p>
-      <div class="status-guide">
-        ${STATUSES.map(([, label]) => `<span>${label}</span>`).join('')}
+    ${orderToolbarHtml()}
+    <div class="order-table" role="table" aria-label="주문 목록">
+      <div class="order-table-head" role="row">
+        <span>주문일시</span><span>주문번호</span><span>구매자</span><span>상품</span><span>금액</span><span>상태</span><span>운송장</span><span></span>
       </div>
-    </section>
+      <div class="order-table-body">
+        ${list.length ? list.map(orderRow).join('') : '<p class="empty-cat">조건에 맞는 주문이 없습니다.</p>'}
+      </div>
+    </div>
   `
+  updateOrderStatus()
 }
 
 function customerRow(c) {
@@ -694,46 +782,75 @@ document.querySelector('#panel-products').addEventListener('change', async (e) =
 })
 
 document.querySelector('#panel-orders').addEventListener('click', async (e) => {
-  const btn = e.target.closest('[data-save-status]')
-  if (!btn) return
-  const orderId = btn.dataset.saveStatus
-  const cardEl = e.target.closest('[data-order]')
-  const select = cardEl.querySelector('[data-order-status]')
-  const msg = cardEl.querySelector('[data-order-msg]')
-  btn.disabled = true
-  msg.hidden = false
-  msg.className = 'msg'
-  msg.textContent = '저장 중…'
-  try {
-    const updated = await request(`/api/admin/orders/${encodeURIComponent(orderId)}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: select.value }),
-    })
-    const idx = orders.findIndex((o) => o.id === orderId)
-    if (idx >= 0) orders[idx] = updated
+  const filterBtn = e.target.closest('[data-order-filter]')
+  if (filterBtn) {
+    orderStatusFilter = filterBtn.dataset.orderFilter || 'all'
+    openOrderId = null
     renderOrders()
-    const fresh = document.querySelector(`[data-order="${CSS.escape(orderId)}"] [data-order-msg]`)
-    if (fresh) {
-      fresh.hidden = false
-      fresh.className = 'msg'
-      fresh.textContent = `상태 변경: ${updated.status_label || updated.status}`
-    }
-  } catch (error) {
-    msg.className = 'err'
-    msg.textContent = error.message
-    btn.disabled = false
+    return
   }
-})
+  if (e.target.closest('[data-order-search]')) {
+    orderQuery = document.querySelector('#order-q')?.value || ''
+    openOrderId = null
+    renderOrders()
+    return
+  }
+  if (e.target.closest('[data-order-reset]')) {
+    orderQuery = ''
+    orderStatusFilter = 'all'
+    openOrderId = null
+    renderOrders()
+    return
+  }
+  const toggle = e.target.closest('[data-toggle-order]')
+  if (toggle) {
+    const id = toggle.dataset.toggleOrder
+    openOrderId = openOrderId === id ? null : id
+    renderOrders()
+    return
+  }
 
-document.querySelector('#panel-orders').addEventListener('click', async (e) => {
-  const btn = e.target.closest('[data-save-tracking]')
-  if (!btn) return
-  const orderId = btn.dataset.saveTracking
+  const statusBtn = e.target.closest('[data-save-status]')
+  if (statusBtn) {
+    const orderId = statusBtn.dataset.saveStatus
+    const cardEl = e.target.closest('[data-order]')
+    const select = cardEl.querySelector('[data-order-status]')
+    const msg = cardEl.querySelector('[data-order-msg]')
+    statusBtn.disabled = true
+    msg.hidden = false
+    msg.className = 'msg'
+    msg.textContent = '저장 중…'
+    try {
+      const updated = await request(`/api/admin/orders/${encodeURIComponent(orderId)}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: select.value }),
+      })
+      const idx = orders.findIndex((o) => o.id === orderId)
+      if (idx >= 0) orders[idx] = updated
+      openOrderId = orderId
+      renderOrders()
+      const fresh = document.querySelector(`[data-order="${CSS.escape(orderId)}"] [data-order-msg]`)
+      if (fresh) {
+        fresh.hidden = false
+        fresh.className = 'msg'
+        fresh.textContent = `상태 변경: ${updated.status_label || updated.status}`
+      }
+    } catch (error) {
+      msg.className = 'err'
+      msg.textContent = error.message
+      statusBtn.disabled = false
+    }
+    return
+  }
+
+  const trackBtn = e.target.closest('[data-save-tracking]')
+  if (!trackBtn) return
+  const orderId = trackBtn.dataset.saveTracking
   const cardEl = e.target.closest('[data-order]')
   const input = cardEl.querySelector('[data-tracking]')
   const msg = cardEl.querySelector('[data-order-msg]')
-  btn.disabled = true
+  trackBtn.disabled = true
   msg.hidden = false
   msg.className = 'msg'
   msg.textContent = '운송장 저장 중…'
@@ -745,6 +862,7 @@ document.querySelector('#panel-orders').addEventListener('click', async (e) => {
     })
     const idx = orders.findIndex((o) => o.id === orderId)
     if (idx >= 0) orders[idx] = updated
+    openOrderId = orderId
     renderOrders()
     const fresh = document.querySelector(`[data-order="${CSS.escape(orderId)}"] [data-order-msg]`)
     if (fresh) {
@@ -757,8 +875,16 @@ document.querySelector('#panel-orders').addEventListener('click', async (e) => {
   } catch (error) {
     msg.className = 'err'
     msg.textContent = error.message
-    btn.disabled = false
+    trackBtn.disabled = false
   }
+})
+
+document.querySelector('#panel-orders').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || e.target.id !== 'order-q') return
+  e.preventDefault()
+  orderQuery = e.target.value || ''
+  openOrderId = null
+  renderOrders()
 })
 
 document.querySelector('#panel-customers').addEventListener('click', async (e) => {

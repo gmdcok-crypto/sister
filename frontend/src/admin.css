@@ -15,16 +15,56 @@ input,select,textarea{width:100%;border:1px solid #ddd;border-radius:10px;paddin
 .panel{display:grid;gap:14px}
 .panel.is-hidden,[hidden].panel{display:none !important}
 .order-list{display:grid;gap:14px}
-.order-card{background:#fff;border:1px solid #eadfd6;border-radius:16px;padding:16px}
-.order-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
-.order-head h2{margin:0;font-size:18px}
-.order-meta p{margin:4px 0}
-.order-items{margin:10px 0;padding-left:18px}
+.order-console{display:grid;gap:12px;margin-bottom:4px}
+.order-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.order-chip{display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;background:#fff;color:#333;border:1px solid #eadfd6;border-radius:999px;padding:8px 12px;font-weight:700;font-size:13px}
+.order-chip em{font-style:normal;font-size:12px;color:#888;background:#fcf2ec;border-radius:999px;padding:2px 7px}
+.order-chip.is-active{background:#03c75a;color:#fff;border-color:#03c75a}
+.order-chip.is-active em{background:rgba(255,255,255,.22);color:#fff}
+.order-search{display:flex;gap:8px;flex-wrap:wrap}
+.order-search input{flex:1;min-width:220px}
+.order-table{background:#fff;border:1px solid #eadfd6;border-radius:16px;overflow:hidden}
+.order-table-head,.order-row-main{display:grid;grid-template-columns:1.1fr 1.2fr 1fr 1.4fr .8fr .9fr 1fr .55fr;gap:8px;align-items:center}
+.order-table-head{padding:12px 14px;background:#f7f8f9;border-bottom:1px solid #eadfd6;font-size:12px;font-weight:700;color:#666}
+.order-table-body{display:grid}
+.order-row{border-bottom:1px solid #f0e7e0}
+.order-row:last-child{border-bottom:0}
+.order-row-main{width:100%;text-align:left;background:#fff;color:inherit;border:0;border-radius:0;padding:14px;font-weight:400}
+.order-row-main:hover{background:#fcfaf8}
+.order-row.is-open .order-row-main{background:#f3fbf6}
+.order-row-main .o-date{font-size:12px;color:#666}
+.order-row-main .o-id code{font-size:12px;background:#f4f1ee;padding:2px 6px;border-radius:6px}
+.order-row-main .o-buyer{display:grid;gap:2px}
+.order-row-main .o-buyer strong{font-size:14px}
+.order-row-main .o-buyer em{font-style:normal;font-size:12px;color:#777}
+.order-row-main .o-items{font-size:13px;color:#333;line-height:1.35}
+.order-row-main .o-total{font-weight:700;font-size:14px}
+.order-row-main .o-more{font-size:12px;font-weight:700;color:#03c75a}
+.status-pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;background:#f4f1ee;color:#444}
+.status-pill.status-pending_payment{background:#fff4e5;color:#b54708}
+.status-pill.status-paid{background:#e8f5e9;color:#1b5e20}
+.status-pill.status-preparing{background:#e3f2fd;color:#0d47a1}
+.status-pill.status-shipping{background:#e8eaf6;color:#283593}
+.status-pill.status-completed{background:#eceff1;color:#37474f}
+.status-pill.status-cancelled{background:#fdecea;color:#b42318}
+.order-row-detail{padding:0 14px 16px;background:#fbfaf8;border-top:1px dashed #eadfd6}
+.order-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding-top:14px}
+.order-detail-grid h3{margin:0 0 8px;font-size:14px}
+.order-detail-grid p{margin:4px 0;font-size:14px}
+.order-items{margin:0;padding-left:18px}
 .order-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
 .order-actions label{display:flex;gap:8px;align-items:center}
 .order-actions select{width:auto;min-width:140px}
 .tracking-input{width:150px;border:1px solid #ddd;border-radius:10px;padding:8px 10px}
 .empty-orders{background:#fffaf6;border:2px dashed #ff633e;border-radius:16px;padding:28px 24px;min-height:220px}
+@media(max-width:980px){
+  .order-table-head{display:none}
+  .order-row-main{grid-template-columns:1fr 1fr;gap:6px 10px}
+  .order-row-main .o-date{grid-column:1 / -1}
+  .order-row-main .o-items{grid-column:1 / -1}
+  .order-row-main .o-more{justify-self:end}
+  .order-detail-grid{grid-template-columns:1fr}
+}
 .customer-toolbar{display:flex;gap:8px;margin-bottom:12px}
 .customer-toolbar input{flex:1}
 .customer-list{display:grid;gap:8px}
