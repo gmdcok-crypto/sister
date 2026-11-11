@@ -167,7 +167,7 @@ function renderAbout(){
     <section class="about-tri about-reveal" aria-label="보관과 위생">
       <figure><img src="${FACILITY.stock}" alt="팔레트에 정리된 상품" loading="lazy" decoding="async"></figure>
       <figure><img src="${FACILITY.hygiene}" alt="위생·해충 관리 설비" loading="lazy" decoding="async"></figure>
-      <figure><img src="${FACILITY.signage}" alt="사업장 언니네 간판" loading="lazy" decoding="async"></figure>
+      <figure class="about-shot-sign"><img src="${FACILITY.signage}" alt="사업장 언니네 간판" loading="lazy" decoding="async"></figure>
     </section>
 
     <section class="about-cta about-reveal">

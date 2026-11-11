@@ -198,6 +198,8 @@ body.is-about footer{max-width:1240px;padding-left:24px;padding-right:24px}
 .about-tri figure{margin:0;overflow:hidden;border-radius:16px;background:#d9cfc6}
 .about-tri img{display:block;width:100%;aspect-ratio:1;object-fit:cover;transition:transform .65s ease}
 .about-tri figure:hover img{transform:scale(1.05)}
+.about-shot-sign img{object-position:50% 12%}
+.about-tri .about-shot-sign:hover img{transform:scale(1.03);transform-origin:50% 15%}
 .about-award{display:grid;gap:28px;padding-top:48px;padding-bottom:72px;max-width:1320px}
 .about-award-head{max-width:40rem}
 .about-award-head h2{margin:0 0 12px;font-size:clamp(30px,4vw,46px);line-height:1.15;letter-spacing:-.03em}
@@ -217,6 +219,7 @@ body.is-about footer{max-width:1240px;padding-left:24px;padding-right:24px}
   .trust-strip-visuals{min-height:220px}
   .about-tri{grid-template-columns:1fr;gap:10px}
   .about-tri img{aspect-ratio:16/10}
+  .about-shot-sign img{object-position:50% 8%}
   .about-pair{grid-template-columns:1fr}
   .about-hero-bg{object-position:82% 26%}
   .about-award-shots{grid-template-columns:1fr;gap:18px}
@@ -229,4 +232,6 @@ body.is-about footer{max-width:1240px;padding-left:24px;padding-right:24px}
   .about-award{padding-top:36px;padding-bottom:48px}
   .about-award-shots figure{padding:12px}
   .about-award-shots img{max-height:min(62vh,520px)}
+  .about-tri img{aspect-ratio:16/11}
+  .about-shot-sign img{object-position:50% 0%;object-fit:cover}
 }
