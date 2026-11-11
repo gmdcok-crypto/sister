@@ -124,11 +124,9 @@ function renderAbout(){
       <div class="about-award-shots">
         <figure>
           <img src="${FACILITY.plaque}" alt="언니네닭 웹 현판" loading="lazy" decoding="async">
-          <figcaption>웹 현판</figcaption>
         </figure>
         <figure>
           <img src="${FACILITY.award}" alt="언니네닭 상장" loading="lazy" decoding="async">
-          <figcaption>상장</figcaption>
         </figure>
       </div>
     </section>
