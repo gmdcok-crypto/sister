@@ -115,6 +115,24 @@ function renderAbout(){
       </div>
     </section>
 
+    <section class="about-award about-reveal">
+      <div class="about-award-head">
+        <p class="about-kicker">Recognition</p>
+        <h2>소비자 평가로 인정받은 이름.</h2>
+        <p>현판과 상장은 자랑이 아니라, 일관된 기준을 지키겠다는 약속으로 보여 드립니다.</p>
+      </div>
+      <div class="about-award-shots">
+        <figure>
+          <img src="${FACILITY.plaque}" alt="언니네닭 웹 현판" loading="lazy" decoding="async">
+          <figcaption>웹 현판</figcaption>
+        </figure>
+        <figure>
+          <img src="${FACILITY.award}" alt="언니네닭 상장" loading="lazy" decoding="async">
+          <figcaption>상장</figcaption>
+        </figure>
+      </div>
+    </section>
+
     <section class="about-block about-reveal">
       <div class="about-block-copy">
         <p class="about-kicker">Facility</p>
@@ -152,18 +170,6 @@ function renderAbout(){
       <figure><img src="${FACILITY.stock}" alt="팔레트에 정리된 상품" loading="lazy" decoding="async"></figure>
       <figure><img src="${FACILITY.hygiene}" alt="위생·해충 관리 설비" loading="lazy" decoding="async"></figure>
       <figure><img src="${FACILITY.signage}" alt="사업장 언니네 간판" loading="lazy" decoding="async"></figure>
-    </section>
-
-    <section class="about-award about-reveal">
-      <div class="about-block-copy">
-        <p class="about-kicker">Recognition</p>
-        <h2>소비자 평가로<br>인정받은 이름.</h2>
-        <p>현판과 상장은 자랑이 아니라, 일관된 기준을 지키겠다는 약속으로 보여 드립니다.</p>
-      </div>
-      <div class="about-award-shots">
-        <figure><img src="${FACILITY.plaque}" alt="언니네닭 웹 현판" loading="lazy" decoding="async"></figure>
-        <figure><img src="${FACILITY.award}" alt="언니네닭 상장" loading="lazy" decoding="async"></figure>
-      </div>
     </section>
 
     <section class="about-cta about-reveal">
