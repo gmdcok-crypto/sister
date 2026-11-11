@@ -36,13 +36,40 @@ async function request(path,options={}){
 }
 
 const LOGO='https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/unnine-logo-transparent.webp?v=1';
+const FACILITY={
+  exterior:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/facility/exterior.webp',
+  signage:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/facility/signage.webp',
+  hall:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/facility/hall.webp',
+  freezer:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/facility/freezer.webp',
+  storage:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/facility/storage.webp',
+  stock:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/facility/stock.webp',
+  coldroom:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/facility/coldroom.webp',
+  hygiene:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/facility/hygiene.webp',
+  award:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/facility/award.webp',
+  plaque:'https://pub-236307febd5647328aae37b69df5373d.r2.dev/facility/plaque.webp',
+};
 
-document.querySelector('#app').innerHTML=`<header class="${parseRoute().view==='home'?'home-mode':''}"><div class="top"><a href="#/" class="logo" aria-label="언니네닭 홈"><img src="${LOGO}" alt="언니네닭"></a><form id="search"><input aria-label="상품 검색" placeholder="어떤 상품을 찾으세요?"><button>검색</button></form><div class="top-actions"><button type="button" id="orders-btn" class="account-btn">주문내역</button><button type="button" id="account-btn" class="account-btn">로그인</button><button id="cart-open">장바구니 <span id="count">0</span></button></div></div></header><main>
-<section id="home-view"><section class="hero" aria-label="메인 소개"><img class="hero-bg" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-premium-fresh.webp?v=1" alt="" decoding="async"><a href="#/" class="hero-logo" aria-label="언니네닭 홈"><img src="${LOGO}" alt="언니네닭"></a><div class="hero-copy"><p class="accent">우리 집 식탁을 위한 장보기</p><h1>맛있는 선택,<br>언니네닭에서.</h1><p>닭고기부터 다양한 육류까지. 필요한 상품을 편리하게 만나보세요.</p><button id="browse">상품 둘러보기</button></div></section><div class="category-nav-wrap"><nav id="nav" class="category-nav" aria-label="상품 카테고리"></nav><span class="category-nav-hint" aria-hidden="true">›</span></div><section id="catalog"><div class="title"><h2 id="title">전체상품</h2><span id="results" aria-live="polite"></span></div><p id="error" role="alert"></p><div id="grid" class="grid"></div></section></section>
+document.querySelector('#app').innerHTML=`<header class="${parseRoute().view==='home'?'home-mode':''}"><div class="top"><a href="#/" class="logo" aria-label="언니네닭 홈"><img src="${LOGO}" alt="언니네닭"></a><form id="search"><input aria-label="상품 검색" placeholder="어떤 상품을 찾으세요?"><button>검색</button></form><div class="top-actions"><button type="button" id="about-btn" class="account-btn">회사소개</button><button type="button" id="orders-btn" class="account-btn">주문내역</button><button type="button" id="account-btn" class="account-btn">로그인</button><button id="cart-open">장바구니 <span id="count">0</span></button></div></div></header><main>
+<section id="home-view"><section class="hero" aria-label="메인 소개"><img class="hero-bg" src="https://pub-236307febd5647328aae37b69df5373d.r2.dev/brand/hero-premium-fresh.webp?v=1" alt="" decoding="async"><a href="#/" class="hero-logo" aria-label="언니네닭 홈"><img src="${LOGO}" alt="언니네닭"></a><div class="hero-copy"><p class="accent">우리 집 식탁을 위한 장보기</p><h1>맛있는 선택,<br>언니네닭에서.</h1><p>닭고기부터 다양한 육류까지. 필요한 상품을 편리하게 만나보세요.</p><div class="hero-actions"><button id="browse">상품 둘러보기</button><button type="button" class="hero-secondary" id="hero-about">회사 소개</button></div></div></section><div class="category-nav-wrap"><nav id="nav" class="category-nav" aria-label="상품 카테고리"></nav><span class="category-nav-hint" aria-hidden="true">›</span></div><section id="catalog"><div class="title"><h2 id="title">전체상품</h2><span id="results" aria-live="polite"></span></div><p id="error" role="alert"></p><div id="grid" class="grid"></div></section>
+<section class="trust-strip" aria-label="시설과 관리">
+  <div class="trust-strip-copy">
+    <p class="trust-kicker">Clean Facility</p>
+    <h2>깨끗하게 다루는 공간에서,<br>식탁까지.</h2>
+    <p>냉장·냉동 시설과 위생 관리로 상품을 보관합니다. 현장의 모습을 회사소개에서 확인해 보세요.</p>
+    <button type="button" class="account-btn" data-go-about>시설 살펴보기</button>
+  </div>
+  <div class="trust-strip-visuals">
+    <figure class="trust-shot trust-shot-a"><img src="${FACILITY.hall}" alt="언니네닭 작업·보관 공간" loading="lazy" decoding="async"></figure>
+    <figure class="trust-shot trust-shot-b"><img src="${FACILITY.storage}" alt="정리된 냉장 보관 랙" loading="lazy" decoding="async"></figure>
+    <figure class="trust-shot trust-shot-c"><img src="${FACILITY.freezer}" alt="냉동고와 온도 관리" loading="lazy" decoding="async"></figure>
+  </div>
+</section>
+</section>
 <section id="product-view" class="product-view" hidden></section>
 <section id="auth-view" class="auth-view" hidden></section>
 <section id="mypage-view" class="mypage-view" hidden></section>
-</main><div id="pay-status" class="pay-status" hidden role="status"></div><div id="pay-cancel-bar" class="pay-cancel-bar" hidden><button type="button" id="pay-cancel-btn">결제 취소</button></div><footer>언니네닭 <p>상품·가격은 제공된 캡처를 바탕으로 등록한 초기 자료입니다. 상품 사진은 AI로 제작한 연출 이미지입니다.</p></footer><dialog id="cart"><div class="cart-scroll"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><div id="address-book" class="address-book" hidden></div><div id="address-fields" class="address-fields"><label class="addr-label-field" hidden>배송지명<input name="label" maxlength="40" placeholder="예: 집, 회사" autocomplete="off"></label><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><div class="addr-search-block"><label class="addr-zip-label">우편번호<span class="addr-zip-row"><input name="zonecode" readonly maxlength="10" placeholder="우편번호" autocomplete="postal-code"><button type="button" class="account-btn" data-postcode-search>주소찾기</button></span></label><label>기본 주소<input name="address_base" readonly required minlength="5" maxlength="400" placeholder="주소찾기로 검색해 주세요" autocomplete="street-address"></label><label>상세 주소<input name="address_detail" maxlength="200" placeholder="동·호수 등 상세주소" autocomplete="address-line2"></label><input type="hidden" name="address" value=""></div><div id="save-address-wrap" class="save-address-wrap" hidden><button type="button" class="account-btn" data-save-address>주소록에 저장</button><p class="muted save-address-hint">입력한 배송지를 주소록에 남겨 다음 주문에서 선택할 수 있습니다.</p><p class="auth-msg" id="save-address-msg" hidden role="status"></p></div></div><p id="checkout-note">주문 접수 후 카드 결제를 진행합니다. 배송비는 별도 안내될 수 있습니다.</p><p id="order-message" role="status"></p></form></div><div class="cart-checkout-bar"><button id="submit" type="submit" form="order">주문 접수</button></div></dialog>`;
+<section id="about-view" class="about-view" hidden></section>
+</main><div id="pay-status" class="pay-status" hidden role="status"></div><div id="pay-cancel-bar" class="pay-cancel-bar" hidden><button type="button" id="pay-cancel-btn">결제 취소</button></div><footer><div class="footer-brand"><img src="${LOGO}" alt="" width="72" height="72"><div><strong>언니네닭</strong><p>신선하게 준비하고, 깔끔하게 보관한 뒤 보내 드립니다.</p></div></div><div class="footer-links"><a href="#/about">회사소개</a><a href="#/">쇼핑하기</a><a href="#/mypage">주문내역</a></div><p class="footer-note">상품 사진은 연출 이미지를 포함할 수 있습니다. 실제 상품과 다를 수 있습니다.</p></footer><dialog id="cart"><div class="cart-scroll"><div class="title"><h2>장바구니</h2><button id="cart-close" aria-label="닫기">닫기</button></div><div id="cart-lines"></div><p id="total"></p><form id="order"><h3>배송 정보</h3><div id="address-book" class="address-book" hidden></div><div id="address-fields" class="address-fields"><label class="addr-label-field" hidden>배송지명<input name="label" maxlength="40" placeholder="예: 집, 회사" autocomplete="off"></label><label>받는 분<input name="customer_name" required maxlength="100" autocomplete="name"></label><label>연락처<input name="phone" required type="tel" pattern="0[0-9-]{8,19}" autocomplete="tel"></label><div class="addr-search-block"><label class="addr-zip-label">우편번호<span class="addr-zip-row"><input name="zonecode" readonly maxlength="10" placeholder="우편번호" autocomplete="postal-code"><button type="button" class="account-btn" data-postcode-search>주소찾기</button></span></label><label>기본 주소<input name="address_base" readonly required minlength="5" maxlength="400" placeholder="주소찾기로 검색해 주세요" autocomplete="street-address"></label><label>상세 주소<input name="address_detail" maxlength="200" placeholder="동·호수 등 상세주소" autocomplete="address-line2"></label><input type="hidden" name="address" value=""></div><div id="save-address-wrap" class="save-address-wrap" hidden><button type="button" class="account-btn" data-save-address>주소록에 저장</button><p class="muted save-address-hint">입력한 배송지를 주소록에 남겨 다음 주문에서 선택할 수 있습니다.</p><p class="auth-msg" id="save-address-msg" hidden role="status"></p></div></div><p id="checkout-note">주문 접수 후 카드 결제를 진행합니다. 배송비는 별도 안내될 수 있습니다.</p><p id="order-message" role="status"></p></form></div><div class="cart-checkout-bar"><button id="submit" type="submit" form="order">주문 접수</button></div></dialog>`;
 
 function persist(){localStorage.setItem('unnine-cart',JSON.stringify(cart));document.querySelector('#count').textContent=cart.reduce((n,x)=>n+x.quantity,0)}
 function parseRoute(){
@@ -50,6 +77,7 @@ function parseRoute(){
   if(/^\/?login/.test(h)) return {view:'login',id:null};
   if(/^\/?signup/.test(h)) return {view:'signup',id:null};
   if(/^\/?mypage/.test(h)||/^\/?orders/.test(h)) return {view:'mypage',id:null};
+  if(/^\/?about/.test(h)||/^\/?company/.test(h)) return {view:'about',id:null};
   const m=h.match(/^\/?product\/(\d+)/);
   return m?{view:'product',id:+m[1]}:{view:'home',id:null};
 }
@@ -67,6 +95,96 @@ function goSignup(){
   location.hash='#/signup';
 }
 function goMypage(){location.hash='#/mypage'}
+function goAbout(){location.hash='#/about'}
+
+function renderAbout(){
+  const view=document.querySelector('#about-view');
+  if(!view)return;
+  view.innerHTML=`
+    <section class="about-hero" aria-label="회사 소개">
+      <img class="about-hero-bg" src="${FACILITY.exterior}" alt="언니네닭 사업장 외관" decoding="async">
+      <div class="about-hero-shade"></div>
+      <div class="about-hero-inner">
+        <img class="about-hero-logo" src="${LOGO}" alt="언니네닭">
+        <p class="about-kicker">Company</p>
+        <h1>깨끗하게 다루는 일,<br>언니네닭의 기본입니다.</h1>
+        <p>현장의 공간과 보관 환경을 사진으로 보여 드립니다.</p>
+        <div class="about-hero-actions">
+          <button type="button" id="about-shop">상품 보러가기</button>
+          <button type="button" class="hero-secondary" data-back-home>쇼핑 홈</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="about-block about-reveal">
+      <div class="about-block-copy">
+        <p class="about-kicker">Facility</p>
+        <h2>비워 둔 공간처럼,<br>관리되는 현장.</h2>
+        <p>넓은 통로와 정돈된 바닥, 바로 확인할 수 있는 보관 동선. 복잡한 설명보다 현장의 결이 먼저 보이게 구성했습니다.</p>
+      </div>
+      <figure class="about-bleed-shot">
+        <img src="${FACILITY.hall}" alt="깔끔하게 정돈된 작업·보관 홀" loading="lazy" decoding="async">
+      </figure>
+    </section>
+
+    <section class="about-pair about-reveal">
+      <figure>
+        <img src="${FACILITY.freezer}" alt="냉동고 온도와 잠금 관리" loading="lazy" decoding="async">
+        <figcaption>냉동고 온도 기준을 눈에 보이게 관리합니다.</figcaption>
+      </figure>
+      <figure>
+        <img src="${FACILITY.coldroom}" alt="냉장·냉동 출입 공간" loading="lazy" decoding="async">
+        <figcaption>출고 동선이 끊기지 않도록 공간을 나눕니다.</figcaption>
+      </figure>
+    </section>
+
+    <section class="about-block about-block-flip about-reveal">
+      <div class="about-block-copy">
+        <p class="about-kicker">Cold Chain</p>
+        <h2>쌓아 두는 방식이<br>곧 품질입니다.</h2>
+        <p>라벨과 적재 위치를 맞춰 보관합니다. 빨리 찾기보다, 흐트러지지 않게 두는 쪽을 택했습니다.</p>
+      </div>
+      <figure class="about-bleed-shot">
+        <img src="${FACILITY.storage}" alt="정리된 냉장 보관 재고" loading="lazy" decoding="async">
+      </figure>
+    </section>
+
+    <section class="about-tri about-reveal" aria-label="보관과 위생">
+      <figure><img src="${FACILITY.stock}" alt="팔레트에 정리된 상품" loading="lazy" decoding="async"></figure>
+      <figure><img src="${FACILITY.hygiene}" alt="위생·해충 관리 설비" loading="lazy" decoding="async"></figure>
+      <figure><img src="${FACILITY.signage}" alt="사업장 언니네 간판" loading="lazy" decoding="async"></figure>
+    </section>
+
+    <section class="about-award about-reveal">
+      <div class="about-block-copy">
+        <p class="about-kicker">Recognition</p>
+        <h2>소비자 평가로<br>인정받은 이름.</h2>
+        <p>현판과 상장은 자랑이 아니라, 일관된 기준을 지키겠다는 약속으로 보여 드립니다.</p>
+      </div>
+      <div class="about-award-shots">
+        <figure><img src="${FACILITY.plaque}" alt="언니네닭 웹 현판" loading="lazy" decoding="async"></figure>
+        <figure><img src="${FACILITY.award}" alt="언니네닭 상장" loading="lazy" decoding="async"></figure>
+      </div>
+    </section>
+
+    <section class="about-cta about-reveal">
+      <img src="${LOGO}" alt="" width="88" height="88">
+      <h2>식탁에 올릴 선택을,<br>여기서 이어가세요.</h2>
+      <button type="button" id="about-shop-bottom">쇼핑 계속하기</button>
+    </section>
+  `;
+  view.querySelectorAll('#about-shop, #about-shop-bottom, [data-back-home]').forEach(btn=>{
+    btn.onclick=()=>{goHome(); setTimeout(()=>document.querySelector('#catalog')?.scrollIntoView({behavior:'smooth'}),80)};
+  });
+  requestAnimationFrame(()=>{
+    const nodes=[...view.querySelectorAll('.about-reveal')];
+    if(!('IntersectionObserver' in window)){nodes.forEach(n=>n.classList.add('is-in'));return}
+    const io=new IntersectionObserver(entries=>{
+      entries.forEach(en=>{if(en.isIntersecting){en.target.classList.add('is-in');io.unobserve(en.target)}});
+    },{threshold:0.16});
+    nodes.forEach(n=>io.observe(n));
+  });
+}
 function formatWhen(value){
   if(!value) return '';
   const d=new Date(value);
@@ -483,31 +601,39 @@ function showView(){
   detailId=route.view==='product'?route.id:null;
   authView=route.view==='login'||route.view==='signup'?route.view:null;
   mypageView=route.view==='mypage';
+  const aboutView=route.view==='about';
   const home=document.querySelector('#home-view');
   const product=document.querySelector('#product-view');
   const auth=document.querySelector('#auth-view');
   const mypage=document.querySelector('#mypage-view');
+  const about=document.querySelector('#about-view');
   const header=document.querySelector('header');
   const footer=document.querySelector('footer');
-  header.classList.remove('home-mode');
+  header.classList.remove('home-mode','about-mode');
+  document.body.classList.toggle('is-about', !!aboutView);
   if(authView){
-    home.hidden=true;product.hidden=true;auth.hidden=false;mypage.hidden=true;
+    home.hidden=true;product.hidden=true;auth.hidden=false;mypage.hidden=true;if(about)about.hidden=true;
     header.classList.add('auth-mode');footer.classList.add('auth-mode');
     auth.innerHTML=authView==='signup'?renderSignup():renderLogin();
     window.scrollTo({top:0,behavior:'smooth'});
   }else if(mypageView){
-    home.hidden=true;product.hidden=true;auth.hidden=true;mypage.hidden=false;
+    home.hidden=true;product.hidden=true;auth.hidden=true;mypage.hidden=false;if(about)about.hidden=true;
     header.classList.remove('auth-mode');footer.classList.remove('auth-mode');
     Promise.all([loadMyOrders(),loadAddresses()]).then(()=>{
       addressFormMode='list';editingAddressId=null;
       renderMypage();window.scrollTo({top:0,behavior:'smooth'});
     });
+  }else if(aboutView){
+    home.hidden=true;product.hidden=true;auth.hidden=true;mypage.hidden=true;if(about)about.hidden=false;
+    header.classList.remove('auth-mode');footer.classList.remove('auth-mode');
+    header.classList.add('about-mode');
+    renderAbout();window.scrollTo(0,0);
   }else if(detailId){
-    home.hidden=true;product.hidden=false;auth.hidden=true;mypage.hidden=true;
+    home.hidden=true;product.hidden=false;auth.hidden=true;mypage.hidden=true;if(about)about.hidden=true;
     header.classList.remove('auth-mode');footer.classList.remove('auth-mode');
     renderDetail();window.scrollTo({top:0,behavior:'smooth'});
   }else{
-    home.hidden=false;product.hidden=true;auth.hidden=true;mypage.hidden=true;
+    home.hidden=false;product.hidden=true;auth.hidden=true;mypage.hidden=true;if(about)about.hidden=true;
     header.classList.remove('auth-mode');footer.classList.remove('auth-mode');header.classList.add('home-mode');
     renderGrid();updateCategoryHint();
   }
@@ -888,20 +1014,26 @@ document.querySelector('#auth-view').addEventListener('submit',async e=>{
   }
 });
 
+function isAwayFromShop(){return !!(detailId||authView||mypageView||parseRoute().view==='about')}
 document.querySelector('#nav').addEventListener('click',e=>{
   const button=e.target.closest('[data-category]');if(!button)return;
   selected=+button.dataset.category;
-  if(detailId||authView||mypageView)goHome();
+  if(isAwayFromShop())goHome();
   else{renderGrid();document.querySelector('#catalog').scrollIntoView({behavior:'smooth'})}
 });
 document.querySelector('#search').onsubmit=e=>{
   e.preventDefault();
   search=e.target.querySelector('input').value.trim();
-  if(detailId||authView||mypageView)goHome();
+  if(isAwayFromShop())goHome();
   else{renderGrid();document.querySelector('#catalog').scrollIntoView({behavior:'smooth'})}
 };
-document.querySelector('#browse').onclick=()=>{if(detailId||authView||mypageView)goHome();document.querySelector('#catalog').scrollIntoView({behavior:'smooth'})};
+document.querySelector('#browse').onclick=()=>{if(isAwayFromShop())goHome();document.querySelector('#catalog').scrollIntoView({behavior:'smooth'})};
 document.querySelector('.logo').addEventListener('click',e=>{e.preventDefault();goHome()});
+document.querySelector('#about-btn').onclick=()=>goAbout();
+document.querySelector('#hero-about')?.addEventListener('click',()=>goAbout());
+document.querySelector('#home-view').addEventListener('click',e=>{
+  if(e.target.closest('[data-go-about]')) goAbout();
+});
 
 document.querySelector('#orders-btn').onclick=()=>goMypage();
 document.querySelector('#account-btn').onclick=async ()=>{
