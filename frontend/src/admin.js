@@ -293,7 +293,7 @@ function updateProductStatus() {
   }
   const cat = categories.find((c) => c.id === productCategoryId)
   const count = products.filter((p) => p.id !== 'new' && p.category_id === productCategoryId).length
-  setStatus(`${esc(cat?.name || '카테고리')} ${count}개 / 전체 ${total}개`)
+  setStatus(`${cat?.name || '카테고리'} ${count}개 / 전체 ${total}개`)
 }
 
 function categoryFilterHtml() {
